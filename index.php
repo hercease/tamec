@@ -26,7 +26,7 @@ $coreController = new CoreController($db);
 $coremodel = new CoreModel($db);
 
 // Base directory configuration
-$baseDir = '/tamec';  // Base directory where your app is located
+$baseDir = '';  // Base directory where your app is located
 $url = str_replace($baseDir, '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
@@ -73,7 +73,7 @@ $routes = [
         '/activities'      => fn() => $viewController->showActivitiesPage($rootUrl),
         '/logout'          => function() use ($baseDir) {
             session_destroy();
-            header('Location: ' . $baseDir . '/login');
+            header('Location: login');
             exit;
         },
     ],
