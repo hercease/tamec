@@ -171,7 +171,7 @@
                     <div class="mt-6">
                         <a href="/" class="w-full bg-[#003366] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#002244] transition duration-300 flex items-center justify-center pulse-animation">
                             <i class="fas fa-home mr-2"></i>
-                            Back to Homepage
+                            Back to Dashboard
                         </a>
                     </div>
                 </div>
