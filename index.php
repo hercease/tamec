@@ -32,7 +32,7 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 
 // Auth check — public routes bypass session verification
-$publicRoutes = ['/login', '/forgot_password', '/404', '/loginauth', '/logout', '/forgot_password_action'];
+$publicRoutes = ['/', '/login', '/forgot_password', '/404', '/loginauth', '/logout', '/forgot_password_action'];
 if (!in_array($url, $publicRoutes)) {
     $isAdmin = isset($_SESSION['tamec_session'])
             && isset($_SESSION['tamec_role'])
