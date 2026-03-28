@@ -32,7 +32,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/dashboard.php';
     }
@@ -55,7 +54,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/staffs.php';
     }
@@ -68,7 +66,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/clients.php';
     }
@@ -80,7 +77,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
             'all_clients' => $this->coreModel->get_all_clients(),
             'all_staffs' => $this->coreModel->get_all_staffs(),
         ];
@@ -95,7 +91,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/payrolls.php';
     }
@@ -108,7 +103,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/holidays.php';
     }
@@ -121,7 +115,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         $documents = $this->coreModel->get_all_documents()['documents'];
         include 'app/views/documents.php';
@@ -135,7 +128,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls'  => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices'  => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/create_payroll.php';
     }
@@ -148,7 +140,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls'  => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices'  => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
             'all_clients'     => $this->coreModel->get_all_clients(),
         ];
         include 'app/views/create_invoice.php';
@@ -162,7 +153,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls'  => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices'  => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/invoices.php';
     }
@@ -175,7 +165,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls'  => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices'  => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/change_password.php';
     }
@@ -188,7 +177,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
             'all_clients' => $this->coreModel->get_all_clients(),
             'all_staffs' => $this->coreModel->get_all_staffs(),
             'all_holidays' => $this->coreModel->get_all_holidays(),
@@ -204,7 +192,6 @@ class ViewController
             'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
             'total_payrolls' => $this->coreModel->sidebarCounter('payrolls'),
             'total_invoices' => $this->coreModel->sidebarCounter('invoices'),
-            'total_locations' => $this->coreModel->sidebarCounter('locations'),
         ];
         include 'app/views/activities.php';
     }
