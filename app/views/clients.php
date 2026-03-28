@@ -1189,7 +1189,8 @@
             $.ajax({
                 url: 'delete_client', // Replace with your actual API endpoint
                 method: 'POST',
-                data: { id: selectedClientId },
+                data: { client_id: selectedClientId },
+                dataType: 'json',
                 success: function(data) {
                     if (data.status) {
                         clients = clients.filter(c => c.id !== selectedClientId);

@@ -153,6 +153,7 @@ class CoreController
     }
 
     public function delete_client(){
+        error_log("delete_client called with POST data: " . json_encode($_POST));
         try {
             if (!isset($_POST['client_id']) || empty(trim($_POST['client_id']))) {
                 throw new Exception("Missing required field: client_id");
