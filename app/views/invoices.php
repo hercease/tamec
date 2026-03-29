@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,139 +9,386 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #99CC33; border-radius: 5px; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
 
-        .sidebar { transform: translateX(-100%); }
-        .sidebar.open { transform: translateX(0); }
-        @media (min-width: 1024px) { .sidebar { transform: translateX(0); } }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #99CC33;
+            border-radius: 5px;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+        }
 
         .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); z-index: 30; opacity: 0; visibility: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
-        .overlay.active { opacity: 1; visibility: visible; }
 
-        .card-hover { transition: all 0.2s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .card-hover {
+            transition: all 0.2s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
 
         .modal {
-            display: none; position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); z-index: 50;
-            justify-content: center; align-items: center;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
         }
-        .modal.active { display: flex; }
+
+        .modal.active {
+            display: flex;
+        }
+
         .modal-content {
-            background-color: white; border-radius: 0.75rem;
-            max-width: 900px; width: 90%; max-height: 90vh;
-            overflow-y: auto; animation: slideIn 0.25s ease;
+            background-color: white;
+            border-radius: 0.75rem;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.25s ease;
         }
-        .modal-content.sm { max-width: 480px; }
+
+        .modal-content.sm {
+            max-width: 480px;
+        }
+
         @keyframes slideIn {
-            from { transform: translateY(-40px); opacity: 0; }
-            to   { transform: translateY(0);     opacity: 1; }
+            from {
+                transform: translateY(-40px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .table-container {
-            background: white; border-radius: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow-x: auto; overflow-y: hidden;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            overflow-x: auto;
+            overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
         }
-        .inv-table { width: 100%; min-width: 900px; border-collapse: collapse; }
-        .inv-table th {
-            background: #f9fafb; padding: 0.875rem 1.25rem; text-align: left;
-            font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
-            color: #6b7280; border-bottom: 1px solid #e5e7eb; white-space: nowrap;
-        }
-        .inv-table td {
-            padding: 0.875rem 1.25rem; border-bottom: 1px solid #f3f4f6;
-            color: #374151; font-size: 0.875rem; vertical-align: middle;
-        }
-        .inv-table tbody tr:last-child td { border-bottom: none; }
-        .inv-table tbody tr:hover { background: #f9fafb; }
 
-        .sched-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
-        .sched-table th {
-            background: #f3f4f6; padding: 0.5rem 0.875rem; text-align: left;
-            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-            color: #6b7280; border-bottom: 1px solid #e5e7eb;
+        .inv-table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: collapse;
         }
-        .sched-table td { padding: 0.6rem 0.875rem; border-bottom: 1px solid #f3f4f6; color: #374151; }
-        .sched-table tbody tr:last-child td { border-bottom: none; }
+
+        .inv-table th {
+            background: #f9fafb;
+            padding: 0.875rem 1.25rem;
+            text-align: left;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+        }
+
+        .inv-table td {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            font-size: 0.875rem;
+            vertical-align: middle;
+        }
+
+        .inv-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .inv-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .sched-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .sched-table th {
+            background: #f3f4f6;
+            padding: 0.5rem 0.875rem;
+            text-align: left;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sched-table td {
+            padding: 0.6rem 0.875rem;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+        }
+
+        .sched-table tbody tr:last-child td {
+            border-bottom: none;
+        }
 
         .status-badge {
-            padding: 0.2rem 0.65rem; border-radius: 9999px;
-            font-size: 0.72rem; font-weight: 600; display: inline-block; white-space: nowrap;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
         }
-        .status-draft     { background: #f3f4f6; color: #6b7280; }
-        .status-sent      { background: #dbeafe; color: #1d4ed8; }
-        .status-paid      { background: #dcfce7; color: #15803d; }
-        .status-overdue   { background: #fee2e2; color: #ef4444; }
-        .status-cancelled { background: #fef3c7; color: #92400e; }
+
+        .status-draft {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-sent {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-paid {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-overdue {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .status-cancelled {
+            background: #fef3c7;
+            color: #92400e;
+        }
 
         .action-btn {
-            padding: 0.4rem 0.5rem; border-radius: 0.375rem;
-            transition: all 0.15s; cursor: pointer; color: #6b7280;
+            padding: 0.4rem 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.15s;
+            cursor: pointer;
+            color: #6b7280;
         }
-        .action-btn:hover           { background: #f3f4f6; }
-        .action-btn.view:hover      { color: #003366; }
-        .action-btn.print:hover     { color: #0369a1; }
-        .action-btn.email:hover     { color: #7c3aed; }
-        .action-btn.paid:hover      { color: #15803d; }
-        .action-btn.delete:hover    { color: #ef4444; }
 
-        .filter-bar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-        .search-box { flex: 1; min-width: 260px; position: relative; }
-        .search-box input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.4rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.875rem; }
-        .search-box i { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        .action-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .action-btn.view:hover {
+            color: #003366;
+        }
+
+        .action-btn.print:hover {
+            color: #0369a1;
+        }
+
+        .action-btn.pdf:hover {
+            color: #dc2626;
+        }
+
+        .action-btn.email:hover {
+            color: #7c3aed;
+        }
+
+        .action-btn.paid:hover {
+            color: #15803d;
+        }
+
+        .action-btn.delete:hover {
+            color: #ef4444;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 260px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.4rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
         .filter-select {
             padding: 0.6rem 2rem 0.6rem 0.875rem;
-            border: 1px solid #d1d5db; border-radius: 0.5rem;
-            font-size: 0.875rem; background: white; cursor: pointer;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
         }
 
-        .form-label  { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem; }
-        .form-select { width: 100%; padding: 0.6rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.875rem; }
-        .form-select:focus { outline: none; border-color: #99CC33; box-shadow: 0 0 0 3px rgba(153,204,51,0.2); }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.375rem;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.6rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #99CC33;
+            box-shadow: 0 0 0 3px rgba(153, 204, 51, 0.2);
+        }
 
         .toast {
-            position: fixed; top: 20px; right: 20px;
-            padding: 1rem 1.5rem; background: white;
-            border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            z-index: 100; transform: translateX(420px); transition: transform 0.3s ease;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            z-index: 100;
+            transform: translateX(420px);
+            transition: transform 0.3s ease;
             border-left: 4px solid #99CC33;
         }
-        .toast.show { transform: translateX(0); }
-        .toast.error   { border-left-color: #ef4444; }
-        .toast.warning { border-left-color: #f59e0b; }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
 
         @media (max-width: 768px) {
-            .filter-bar { flex-direction: column; align-items: stretch; }
-            .search-box { min-width: 100%; }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
             .inv-table th:nth-child(3),
-            .inv-table td:nth-child(3) { display: none; }
+            .inv-table td:nth-child(3) {
+                display: none;
+            }
         }
+
         @media (max-width: 600px) {
+
             .inv-table th:nth-child(4),
             .inv-table td:nth-child(4),
             .inv-table th:nth-child(5),
-            .inv-table td:nth-child(5) { display: none; }
+            .inv-table td:nth-child(5) {
+                display: none;
+            }
         }
 
         @media print {
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { position: fixed; top: 0; left: 0; width: 100%; }
+            body * {
+                visibility: hidden;
+            }
+
+            #printArea,
+            #printArea * {
+                visibility: visible;
+            }
+
+            #printArea {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
     <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
@@ -163,7 +411,8 @@
                     </div>
                     <?php $navName = htmlspecialchars($_SESSION['tamec_name'] ?? 'Admin'); ?>
                     <div class="flex items-center space-x-2 pl-3 border-l border-gray-100">
-                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($navName); ?>&background=003366&color=fff&size=32" class="w-8 h-8 rounded-full">
+                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($navName); ?>&background=003366&color=fff&size=32"
+                            class="w-8 h-8 rounded-full">
                         <div class="hidden sm:block">
                             <p class="text-xs font-semibold text-gray-800 leading-tight"><?php echo $navName; ?></p>
                             <p class="text-xs text-[#99CC33] leading-tight">Administrator</p>
@@ -181,7 +430,8 @@
                     <h1 class="text-2xl sm:text-3xl font-bold text-black">Invoices</h1>
                     <p class="text-gray-600 mt-1 text-sm sm:text-base">View and manage client invoices</p>
                 </div>
-                <a href="create_invoice" class="mt-4 sm:mt-0 px-4 py-2 bg-[#99CC33] text-white text-sm rounded-lg hover:bg-[#88BB22] transition flex items-center">
+                <a href="create_invoice"
+                    class="mt-4 sm:mt-0 px-4 py-2 bg-[#99CC33] text-white text-sm rounded-lg hover:bg-[#88BB22] transition flex items-center">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Create Invoice
                 </a>
@@ -239,7 +489,8 @@
             <div class="filter-bar">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search by invoice # or client..." onkeyup="applyFilters()">
+                    <input type="text" id="searchInput" placeholder="Search by invoice # or client..."
+                        onkeyup="applyFilters()">
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <select id="statusFilter" class="filter-select" onchange="applyFilters()">
@@ -305,7 +556,8 @@
                     <div class="text-center py-10 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i></div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
-                    <button onclick="closeViewModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Close</button>
+                    <button onclick="closeViewModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Close</button>
                 </div>
             </div>
         </div>
@@ -324,8 +576,10 @@
                 <p class="text-gray-600 mb-1">You are about to print</p>
                 <p class="font-semibold text-[#003366] mb-5" id="printInvoiceNum">—</p>
                 <div class="flex justify-center gap-3">
-                    <button onclick="closePrintModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
-                    <button onclick="confirmPrint()" id="printConfirmBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-2">
+                    <button onclick="closePrintModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
+                    <button onclick="confirmPrint()" id="printConfirmBtn"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition flex items-center gap-2">
                         <i class="fas fa-print"></i> Print Now
                     </button>
                 </div>
@@ -345,10 +599,13 @@
                 <h3 class="text-xl font-bold text-black mb-2">Email Invoice</h3>
                 <p class="text-gray-600 mb-1"><strong id="emailInvoiceNum">—</strong> will be sent to</p>
                 <p class="text-[#003366] font-semibold text-sm mb-4" id="emailRecipient">—</p>
-                <p class="text-xs text-gray-400 mb-5">The invoice status will be updated to <strong>Sent</strong> upon successful delivery.</p>
+                <p class="text-xs text-gray-400 mb-5">The invoice status will be updated to <strong>Sent</strong> upon
+                    successful delivery.</p>
                 <div class="flex justify-center gap-3">
-                    <button onclick="closeEmailModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
-                    <button onclick="confirmEmail()" id="emailConfirmBtn" class="px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm hover:bg-[#6d28d9] transition flex items-center gap-2">
+                    <button onclick="closeEmailModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
+                    <button onclick="confirmEmail()" id="emailConfirmBtn"
+                        class="px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm hover:bg-[#6d28d9] transition flex items-center gap-2">
                         <i class="fas fa-paper-plane"></i> Send Email
                     </button>
                 </div>
@@ -370,8 +627,10 @@
                 <p class="font-semibold text-[#003366] mb-2" id="deleteInvoiceNum">—</p>
                 <p class="text-sm text-amber-600 mb-5">All linked schedules will be reset to pending status.</p>
                 <div class="flex justify-center gap-3">
-                    <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
-                    <button onclick="confirmDelete()" id="deleteConfirmBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition flex items-center gap-2">
+                    <button onclick="closeDeleteModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
+                    <button onclick="confirmDelete()" id="deleteConfirmBtn"
+                        class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition flex items-center gap-2">
                         <i class="fas fa-trash"></i> Delete Invoice
                     </button>
                 </div>
@@ -391,10 +650,13 @@
                 <h3 class="text-xl font-bold text-black mb-2">Mark as Paid</h3>
                 <p class="text-gray-600 mb-1">Confirm payment received for</p>
                 <p class="font-semibold text-[#003366] mb-3" id="paidInvoiceNum">—</p>
-                <p class="text-xs text-gray-400 bg-gray-50 rounded-lg p-2 mb-5">The invoice status will be permanently updated to <strong>Paid</strong>.</p>
+                <p class="text-xs text-gray-400 bg-gray-50 rounded-lg p-2 mb-5">The invoice status will be permanently
+                    updated to <strong>Paid</strong>.</p>
                 <div class="flex justify-center gap-3">
-                    <button onclick="closePaidModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
-                    <button onclick="confirmMarkPaid()" id="paidConfirmBtn" class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition flex items-center gap-2">
+                    <button onclick="closePaidModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
+                    <button onclick="confirmMarkPaid()" id="paidConfirmBtn"
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition flex items-center gap-2">
                         <i class="fas fa-check-circle"></i> Mark as Paid
                     </button>
                 </div>
@@ -448,19 +710,19 @@
         // ─── Stats ────────────────────────────────────────────────────────────────
         function updateStats() {
             document.getElementById('statTotal').textContent = invoices.length;
-            document.getElementById('statSent').textContent  = invoices.filter(i => i.status === 'sent').length;
-            document.getElementById('statPaid').textContent  = invoices.filter(i => i.status === 'paid').length;
+            document.getElementById('statSent').textContent = invoices.filter(i => i.status === 'sent').length;
+            document.getElementById('statPaid').textContent = invoices.filter(i => i.status === 'paid').length;
             const total = invoices.reduce((s, i) => s + parseFloat(i.total_amount || 0), 0);
             document.getElementById('statAmount').textContent = '$' + total.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         // ─── Filter ───────────────────────────────────────────────────────────────
         function applyFilters() {
-            const q  = document.getElementById('searchInput').value.toLowerCase();
+            const q = document.getElementById('searchInput').value.toLowerCase();
             const st = document.getElementById('statusFilter').value;
             filteredInvoices = invoices.filter(i => {
-                const matchQ  = !q || (i.invoice_number && i.invoice_number.toLowerCase().includes(q))
-                                   || (i.client_name    && i.client_name.toLowerCase().includes(q));
+                const matchQ = !q || (i.invoice_number && i.invoice_number.toLowerCase().includes(q))
+                    || (i.client_name && i.client_name.toLowerCase().includes(q));
                 const matchSt = st === 'all' || i.status === st;
                 return matchQ && matchSt;
             });
@@ -472,7 +734,7 @@
         function renderTable() {
             const tbody = document.getElementById('invoiceTableBody');
             const start = (currentPage - 1) * itemsPerPage;
-            const page  = filteredInvoices.slice(start, start + itemsPerPage);
+            const page = filteredInvoices.slice(start, start + itemsPerPage);
 
             if (page.length === 0) {
                 tbody.innerHTML = `
@@ -519,6 +781,9 @@
                             <button onclick="openPrintModal(${inv.invoice_id}, '${escHtml(inv.invoice_number)}')" class="action-btn print" title="Print">
                                 <i class="fas fa-print"></i>
                             </button>
+                            <button onclick="downloadInvoicePdf(${inv.invoice_id}, '${escHtml(inv.invoice_number)}')" class="action-btn pdf" title="Download PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
                             <button onclick="openEmailModal(${inv.invoice_id}, '${escHtml(inv.invoice_number)}', '${escHtml(inv.client_email || '')}')" class="action-btn email" title="Email to Client">
                                 <i class="fas fa-envelope"></i>
                             </button>
@@ -550,7 +815,7 @@
             const total = filteredInvoices.length;
             const pages = Math.ceil(total / itemsPerPage);
             const start = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
-            const end   = Math.min(currentPage * itemsPerPage, total);
+            const end = Math.min(currentPage * itemsPerPage, total);
             document.getElementById('paginationInfo').textContent = `Showing ${start}–${end} of ${total} invoices`;
 
             const container = document.getElementById('paginationButtons');
@@ -609,8 +874,8 @@
             document.getElementById('viewModalTitle').textContent = 'Invoice — ' + inv.invoice_number;
 
             const billing = [inv.billing_address || inv.residential_address,
-                             inv.billing_city || inv.residential_city,
-                             inv.billing_province || inv.residential_province].filter(Boolean).join(', ');
+            inv.billing_city || inv.residential_city,
+            inv.billing_province || inv.residential_province].filter(Boolean).join(', ');
 
             const scheduleRows = schedules.length === 0
                 ? '<tr><td colspan="6" class="text-center py-4 text-gray-400">No schedules linked.</td></tr>'
@@ -746,7 +1011,8 @@
             });
         }
 
-        function doPrint(inv, schedules, outstanding) {
+        // ─── Invoice HTML builder (shared by print and PDF download) ────────────
+        function buildInvoiceHtml(inv, schedules, outstanding) {
             outstanding = outstanding || [];
 
             function fmtSlash(s) {
@@ -756,212 +1022,230 @@
             }
             function fmtLong(s) {
                 if (!s) return '—';
-                return new Date(s + 'T00:00:00').toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' });
+                return new Date(s + 'T00:00:00').toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
             }
             function fmtAmt(n) {
-                return '$' + parseFloat(n || 0).toLocaleString('en-CA', { minimumFractionDigits:2, maximumFractionDigits:2 });
+                return '$' + parseFloat(n || 0).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
 
             const billing = [inv.billing_address || inv.residential_address,
-                             inv.billing_city    || inv.residential_city,
-                             inv.billing_province|| inv.residential_province].filter(Boolean).join(', ');
+            inv.billing_city || inv.residential_city,
+            inv.billing_province || inv.residential_province].filter(Boolean).join(', ');
 
-            // Construct absolute logo URL from current page location
             const logoUrl = window.location.origin
                 + window.location.pathname.replace(/\/[^\/]*$/, '/')
                 + 'public/images/tameclogo.png';
 
-            // Build service rows: Description | Type | Taxable | Qty | Rate | Amount
-            const rows = schedules.map(function(s) {
-                const dayN  = s.day_name || '';
+            const rows = schedules.map(function (s) {
+                const dayN = s.day_name || '';
                 const startT = (s.start_short || s.start_time_fmt || '').trim().toLowerCase();
-                const endT   = (s.end_short   || s.end_time_fmt   || '').trim().toLowerCase();
+                const endT = (s.end_short || s.end_time_fmt || '').trim().toLowerCase();
                 const staffD = escHtml(s.staff_name_last || s.staff_name || '');
-                const desc   = fmtSlash(s.schedule_date) + ' (' + dayN + ') @ ' + startT + ' - ' + endT + ' - CG: ' + staffD;
-                const hp     = parseFloat(s.holiday_pay || 0);
-                const rate   = hp > 0 ? (parseFloat(s.bill_rate || 0) * hp / 100) : parseFloat(s.bill_rate || 0);
-                const holTag = hp > 0 ? ' <em style="color:#c2410c;font-size:10px;">(Holiday Pay)</em>' : '';
+                const desc = fmtSlash(s.schedule_date) + ' (' + dayN + ') @ ' + startT + ' - ' + endT + ' - CG: ' + staffD;
+                const hp = parseFloat(s.holiday_pay || 0);
+                const rate = hp > 0 ? (parseFloat(s.bill_rate || 0) * hp / 100) : parseFloat(s.bill_rate || 0);
+                const holTag = hp > 0 ? ' <em style="color:#c2410c;font-size:11px;">(Holiday Pay)</em>' : '';
                 return '<tr>'
-                    + '<td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;">' + desc + holTag + '</td>'
-                    + '<td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;">Hours Normal</td>'
-                    + '<td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;">Yes</td>'
-                    + '<td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:12px;">' + parseFloat(s.hours_worked || 0).toFixed(2) + '</td>'
-                    + '<td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:12px;">' + fmtAmt(rate) + '</td>'
-                    + '<td style="padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600;font-size:12px;">' + fmtAmt(s.amount) + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;line-height:1.4;">' + desc + holTag + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">Hours Normal</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">Yes</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;color:#374151;">' + parseFloat(s.hours_worked || 0).toFixed(2) + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;color:#374151;">' + fmtAmt(rate) + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;font-size:13px;color:#111827;">' + fmtAmt(s.amount) + '</td>'
                     + '</tr>';
             }).join('');
 
-            // Totals
             const subtotal = parseFloat(inv.subtotal || 0);
-            const gst      = parseFloat(inv.tax_amount || 0);
-            const total    = parseFloat(inv.total_amount || 0);
+            const gst = parseFloat(inv.tax_amount || 0);
+            const total = parseFloat(inv.total_amount || 0);
+            const outstandingSum = outstanding.reduce(function (sum, o) { return sum + parseFloat(o.total_amount || 0); }, 0);
+            const payThisAmount = total + outstandingSum;
 
-            // Outstanding section
-            const outstandingSum = outstanding.reduce(function(sum, o) { return sum + parseFloat(o.total_amount || 0); }, 0);
-            const payThisAmount  = total + outstandingSum;
-
-            const outstandingRows = outstanding.map(function(o) {
+            const outstandingRows = outstanding.map(function (o) {
                 return '<tr>'
-                    + '<td style="padding:3px 20px 3px 0;">' + fmtSlash(o.invoice_date) + '</td>'
-                    + '<td style="padding:3px 20px 3px 0;">' + fmtAmt(o.total_amount) + '</td>'
-                    + '<td style="padding:3px 0;font-weight:600;">' + fmtAmt(o.total_amount) + '</td>'
+                    + '<td style="padding:4px 20px 4px 0;font-size:13px;">' + fmtSlash(o.invoice_date) + '</td>'
+                    + '<td style="padding:4px 20px 4px 0;font-size:13px;">' + fmtAmt(o.total_amount) + '</td>'
+                    + '<td style="padding:4px 0;font-weight:700;font-size:13px;">' + fmtAmt(o.total_amount) + '</td>'
                     + '</tr>';
             }).join('');
 
             const outstandingSection = outstanding.length > 0
                 ? '<div style="display:flex;gap:48px;margin-bottom:20px;">'
-                    + '<div>'
-                        + '<p style="font-size:11px;font-weight:700;color:#003366;text-decoration:underline;margin-bottom:8px;">Outstanding Unpaid Invoices</p>'
-                        + '<table style="border-collapse:collapse;font-size:12px;">'
-                            + '<thead><tr>'
-                                + '<th style="text-align:left;padding:2px 20px 4px 0;font-weight:700;">Date</th>'
-                                + '<th style="text-align:left;padding:2px 20px 4px 0;font-weight:700;">Amount</th>'
-                                + '<th style="text-align:left;padding:2px 0 4px;font-weight:700;">Outstanding</th>'
-                            + '</tr></thead>'
-                            + '<tbody>' + outstandingRows + '</tbody>'
-                        + '</table>'
-                    + '</div>'
+                + '<div>'
+                + '<p style="font-size:12px;font-weight:700;color:#003366;text-decoration:underline;margin-bottom:8px;">Outstanding Unpaid Invoices</p>'
+                + '<table style="border-collapse:collapse;">'
+                + '<thead><tr>'
+                + '<th style="text-align:left;padding:2px 20px 6px 0;font-size:12px;font-weight:700;color:#111827;">Date</th>'
+                + '<th style="text-align:left;padding:2px 20px 6px 0;font-size:12px;font-weight:700;color:#111827;">Amount</th>'
+                + '<th style="text-align:left;padding:2px 0 6px;font-size:12px;font-weight:700;color:#111827;">Outstanding</th>'
+                + '</tr></thead>'
+                + '<tbody>' + outstandingRows + '</tbody>'
+                + '</table>'
+                + '</div>'
                 + '</div>'
                 : '';
 
             const otherRow = outstandingSum > 0
-                ? '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;">'
-                    + '<span>Other outstanding balance:</span><span>' + fmtAmt(outstandingSum) + '</span>'
-                  + '</div>'
+                ? '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;">'
+                + '<span>Other outstanding balance:</span><span>' + fmtAmt(outstandingSum) + '</span>'
+                + '</div>'
                 : '';
 
             const notesHtml = inv.notes
-                ? '<div style="margin-top:20px;font-size:12px;color:#6b7280;"><strong>Notes:</strong> ' + escHtml(inv.notes) + '</div>'
+                ? '<div style="margin-top:20px;font-size:13px;color:#374151;"><strong>Notes:</strong> ' + escHtml(inv.notes) + '</div>'
                 : '';
 
-            const win = window.open('', '_blank');
-            win.document.write('<!DOCTYPE html><html><head>'
-                + '<meta charset="UTF-8">'
-                + '<title>Invoice ' + escHtml(inv.invoice_number) + '</title>'
-                + '<style>'
+            const styles = ''
                 + '* { box-sizing:border-box; margin:0; padding:0; }'
-                + 'body { font-family:Arial,sans-serif; color:#374151; background:#fff; }'
+                + 'body { font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#1f2937; background:#fff; -webkit-font-smoothing:antialiased; }'
                 + '.page { padding:32px 40px; max-width:900px; margin:0 auto; }'
                 + '.co-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }'
-                + '.co-name { font-size:13px; font-weight:700; color:#111827; }'
-                + '.co-addr { font-size:11px; color:#6b7280; line-height:1.7; margin-top:3px; }'
+                + '.co-name { font-size:14px; font-weight:800; color:#111827; letter-spacing:.3px; }'
+                + '.co-addr { font-size:12px; color:#4b5563; line-height:1.75; margin-top:4px; }'
                 + '.logo img { max-height:72px; }'
                 + '.inv-title-bar { display:flex; justify-content:space-between; align-items:flex-end; border-top:3px solid #003366; padding-top:14px; margin-bottom:18px; }'
                 + '.inv-title { font-size:38px; font-weight:900; color:#003366; letter-spacing:2px; }'
-                + '.bd-label { font-size:11px; color:#6b7280; font-weight:700; text-align:right; }'
-                + '.bd-amount { font-size:22px; font-weight:700; color:#003366; text-align:right; }'
-                + '.bd-due { font-size:11px; color:#6b7280; text-align:right; margin-top:3px; }'
-                + '.bill-meta { display:flex; justify-content:space-between; gap:40px; margin-bottom:22px; padding:14px 16px; border:1px solid #e5e7eb; border-radius:4px; }'
-                + '.bt-label { font-size:10px; font-weight:700; text-transform:uppercase; color:#9ca3af; margin-bottom:5px; letter-spacing:.5px; }'
-                + '.bt-name { font-size:14px; font-weight:700; color:#111827; }'
-                + '.bt-addr { font-size:11px; color:#6b7280; margin-top:2px; }'
-                + '.meta-tbl { border-collapse:collapse; font-size:12px; }'
-                + '.meta-tbl td { padding:2px 12px 2px 0; color:#374151; vertical-align:top; }'
+                + '.bd-label { font-size:12px; color:#6b7280; font-weight:700; text-align:right; text-transform:uppercase; letter-spacing:.3px; }'
+                + '.bd-amount { font-size:24px; font-weight:800; color:#003366; text-align:right; }'
+                + '.bd-due { font-size:12px; color:#6b7280; text-align:right; margin-top:4px; }'
+                + '.bill-meta { display:flex; justify-content:space-between; gap:40px; margin-bottom:22px; padding:14px 16px; border:1px solid #e5e7eb; border-radius:4px; background:#fafafa; }'
+                + '.bt-label { font-size:11px; font-weight:700; text-transform:uppercase; color:#9ca3af; margin-bottom:5px; letter-spacing:.5px; }'
+                + '.bt-name { font-size:15px; font-weight:700; color:#111827; }'
+                + '.bt-addr { font-size:12px; color:#4b5563; margin-top:3px; }'
+                + '.meta-tbl { border-collapse:collapse; font-size:13px; }'
+                + '.meta-tbl td { padding:3px 14px 3px 0; color:#374151; vertical-align:top; }'
                 + '.meta-tbl td:first-child { font-weight:700; color:#003366; white-space:nowrap; }'
                 + 'table.svc { width:100%; border-collapse:collapse; margin-bottom:16px; }'
                 + 'table.svc thead tr { background:#003366; }'
-                + 'table.svc th { padding:8px 10px; color:#fff; font-size:10px; font-weight:700; text-align:left; text-transform:uppercase; letter-spacing:.5px; }'
+                + 'table.svc th { padding:9px 10px; color:#fff; font-size:11px; font-weight:700; text-align:left; text-transform:uppercase; letter-spacing:.5px; }'
                 + 'table.svc th.r { text-align:right; }'
                 + 'table.svc tbody tr:nth-child(even) { background:#f9fafb; }'
                 + 'table.svc td.r { text-align:right; }'
                 + '.tot-wrap { display:flex; justify-content:flex-end; margin-bottom:24px; }'
-                + '.tot-tbl { border-collapse:collapse; font-size:12px; min-width:260px; }'
-                + '.tot-tbl td { padding:4px 10px; }'
-                + '.tot-tbl td:last-child { text-align:right; font-weight:600; }'
+                + '.tot-tbl { border-collapse:collapse; font-size:13px; min-width:280px; }'
+                + '.tot-tbl td { padding:5px 10px; }'
+                + '.tot-tbl td:last-child { text-align:right; font-weight:700; }'
                 + '.tot-tbl .nt { color:#9ca3af; }'
-                + '.tot-tbl .ttl td { border-top:2px solid #003366; padding-top:10px; font-size:14px; font-weight:700; color:#003366; background:#f0f4ff; }'
+                + '.tot-tbl .ttl td { border-top:2px solid #003366; padding-top:10px; font-size:15px; font-weight:800; color:#003366; background:#f0f4ff; }'
                 + '.pay-wrap { display:flex; justify-content:flex-end; margin-top:8px; }'
-                + '.pay-box { border:1px solid #e5e7eb; border-radius:4px; padding:14px 18px; font-size:12px; min-width:300px; }'
-                + '.pay-amt { display:flex; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:2px solid #003366; font-size:16px; font-weight:900; color:#003366; }'
-                + '.footer { margin-top:30px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:11px; color:#9ca3af; text-align:center; }'
-                + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } @page { size:A4; margin:1.5cm; } }'
-                + '</style></head><body>'
-                + '<div class="page">'
+                + '.pay-box { border:1px solid #e5e7eb; border-radius:4px; padding:14px 18px; font-size:13px; min-width:300px; }'
+                + '.pay-amt { display:flex; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:2px solid #003366; font-size:17px; font-weight:900; color:#003366; }'
+                + '.footer { margin-top:30px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af; text-align:center; }'
+                + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } @page { size:A4; margin:1.5cm; } }';
 
-                // Company Header
+            const body = '<div class="page">'
                 + '<div class="co-header">'
-                    + '<div>'
-                        + '<div class="co-name">TAMEC CARE STAFFING SERVICES LTD</div>'
-                        + '<div class="co-addr">3100 STEELES AVENUE WEST<br>403<br>CONCORD, ONTARIO L4K 3R1<br>info@tameccarestaffing.com</div>'
-                    + '</div>'
-                    + '<div class="logo"><img src="' + logoUrl + '" alt="TAMEC" onerror="this.style.display=\'none\'"></div>'
+                + '<div>'
+                + '<div class="co-name">TAMEC CARE STAFFING SERVICES LTD</div>'
+                + '<div class="co-addr">3100 STEELES AVENUE WEST<br>403<br>CONCORD, ONTARIO L4K 3R1<br>info@tameccarestaffing.com</div>'
                 + '</div>'
-
-                // Invoice Title + Balance Due
+                + '<div class="logo"><img src="' + logoUrl + '" alt="TAMEC" onerror="this.style.display=\'none\'"></div>'
+                + '</div>'
                 + '<div class="inv-title-bar">'
-                    + '<div class="inv-title">INVOICE</div>'
-                    + '<div>'
-                        + '<div class="bd-label">Balance Due</div>'
-                        + '<div class="bd-amount">' + fmtAmt(payThisAmount) + '</div>'
-                        + '<div class="bd-due">Due Date &nbsp; ' + fmtSlash(inv.due_date) + '</div>'
-                    + '</div>'
+                + '<div class="inv-title">INVOICE</div>'
+                + '<div>'
+                + '<div class="bd-label">Balance Due</div>'
+                + '<div class="bd-amount">' + fmtAmt(payThisAmount) + '</div>'
+                + '<div class="bd-due">Due Date &nbsp; ' + fmtSlash(inv.due_date) + '</div>'
                 + '</div>'
-
-                // Bill To + Invoice Meta
+                + '</div>'
                 + '<div class="bill-meta">'
-                    + '<div>'
-                        + '<div class="bt-label">Bill To</div>'
-                        + '<div class="bt-name">' + escHtml(inv.client_name || '') + '</div>'
-                        + (billing ? '<div class="bt-addr">' + escHtml(billing) + '</div>' : '')
-                        + (inv.client_email ? '<div class="bt-addr">' + escHtml(inv.client_email) + '</div>' : '')
-                    + '</div>'
-                    + '<table class="meta-tbl">'
-                        + '<tr><td>Invoice #</td><td>' + escHtml(inv.invoice_number) + '</td></tr>'
-                        + '<tr><td>Date</td><td>' + fmtSlash(inv.invoice_date) + '</td></tr>'
-                        + '<tr><td>Status</td><td>' + (inv.status ? inv.status.charAt(0).toUpperCase() + inv.status.slice(1) : '') + '</td></tr>'
-                        + '<tr><td>Service From</td><td>' + fmtSlash(inv.period_start) + '</td></tr>'
-                        + '<tr><td>To</td><td>' + fmtSlash(inv.period_end) + '</td></tr>'
-                        + '<tr><td>Client</td><td>' + escHtml(inv.client_name || '') + '</td></tr>'
-                    + '</table>'
+                + '<div>'
+                + '<div class="bt-label">Bill To</div>'
+                + '<div class="bt-name">' + escHtml(inv.client_name || '') + '</div>'
+                + (billing ? '<div class="bt-addr">' + escHtml(billing) + '</div>' : '')
+                + (inv.client_email ? '<div class="bt-addr">' + escHtml(inv.client_email) + '</div>' : '')
                 + '</div>'
-
-                // Service Lines Table
-                + '<table class="svc">'
-                    + '<thead><tr>'
-                        + '<th style="width:42%">Description</th>'
-                        + '<th>Type</th>'
-                        + '<th>Taxable</th>'
-                        + '<th class="r">Quantity</th>'
-                        + '<th class="r">Rate</th>'
-                        + '<th class="r">Amount</th>'
-                    + '</tr></thead>'
-                    + '<tbody>' + rows + '</tbody>'
+                + '<table class="meta-tbl">'
+                + '<tr><td>Invoice #</td><td>' + escHtml(inv.invoice_number) + '</td></tr>'
+                + '<tr><td>Date</td><td>' + fmtSlash(inv.invoice_date) + '</td></tr>'
+                + '<tr><td>Status</td><td>' + (inv.status ? inv.status.charAt(0).toUpperCase() + inv.status.slice(1) : '') + '</td></tr>'
+                + '<tr><td>Service From</td><td>' + fmtSlash(inv.period_start) + '</td></tr>'
+                + '<tr><td>To</td><td>' + fmtSlash(inv.period_end) + '</td></tr>'
+                + '<tr><td>Client</td><td>' + escHtml(inv.client_name || '') + '</td></tr>'
                 + '</table>'
-
-                // Totals
+                + '</div>'
+                + '<table class="svc">'
+                + '<thead><tr>'
+                + '<th style="width:42%">Description</th>'
+                + '<th>Type</th>'
+                + '<th>Taxable</th>'
+                + '<th class="r">Quantity</th>'
+                + '<th class="r">Rate</th>'
+                + '<th class="r">Amount</th>'
+                + '</tr></thead>'
+                + '<tbody>' + rows + '</tbody>'
+                + '</table>'
                 + '<div class="tot-wrap"><table class="tot-tbl">'
-                    + '<tr class="nt"><td>Non-Taxable Subtotal</td><td>$0.00</td></tr>'
-                    + '<tr><td>Taxable Subtotal</td><td>' + fmtAmt(subtotal) + '</td></tr>'
-                    + '<tr><td>GST</td><td>' + fmtAmt(gst) + '</td></tr>'
-                    + '<tr class="ttl"><td>Total</td><td>' + fmtAmt(total) + '</td></tr>'
+                + '<tr class="nt"><td>Non-Taxable Subtotal</td><td>$0.00</td></tr>'
+                + '<tr><td>Taxable Subtotal</td><td>' + fmtAmt(subtotal) + '</td></tr>'
+                + '<tr><td>GST</td><td>' + fmtAmt(gst) + '</td></tr>'
+                + '<tr class="ttl"><td>Total</td><td>' + fmtAmt(total) + '</td></tr>'
                 + '</table></div>'
-
-                // Outstanding
                 + outstandingSection
-
-                // Pay This Amount
                 + '<div class="pay-wrap"><div class="pay-box">'
-                    + '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;">'
-                        + '<span>Amount due on this invoice:</span><span>' + fmtAmt(total) + '</span>'
-                    + '</div>'
-                    + otherRow
-                    + '<div class="pay-amt"><span>PAY THIS AMOUNT:</span><span>' + fmtAmt(payThisAmount) + '</span></div>'
+                + '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;">'
+                + '<span>Amount due on this invoice:</span><span>' + fmtAmt(total) + '</span>'
+                + '</div>'
+                + otherRow
+                + '<div class="pay-amt"><span>PAY THIS AMOUNT:</span><span>' + fmtAmt(payThisAmount) + '</span></div>'
                 + '</div></div>'
-
                 + notesHtml
                 + '<div class="footer">Thank you for your business. Please remit payment by ' + fmtLong(inv.due_date) + '.</div>'
-                + '</div></body></html>'
-            );
+                + '</div>';
+
+            return { styles: styles, body: body };
+        }
+
+        function doPrint(inv, schedules, outstanding) {
+            const doc = buildInvoiceHtml(inv, schedules, outstanding);
+            const win = window.open('', '_blank');
+            win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice ' + escHtml(inv.invoice_number) + '</title><style>' + doc.styles + '</style></head><body>' + doc.body + '</body></html>');
             win.document.close();
             win.focus();
-            setTimeout(function() { win.print(); }, 500);
+            setTimeout(function () { win.print(); }, 500);
+        }
+
+        function doDownloadPdf(inv, schedules, outstanding) {
+            const doc = buildInvoiceHtml(inv, schedules, outstanding);
+            // Build a full self-contained HTML page string and pass it to html2pdf
+            // Using .from(html, 'string') renders inside an internal iframe — no
+            // DOM append needed, so blank-page issues are avoided entirely.
+            const fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+                + '<style>' + doc.styles + '</style></head><body>' + doc.body + '</body></html>';
+
+            html2pdf()
+                .set({
+                    margin: [8, 8, 8, 8],
+                    filename: 'Invoice-' + inv.invoice_number + '.pdf',
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                })
+                .from(fullHtml, 'string')
+                .save();
+        }
+
+        function downloadInvoicePdf(id) {
+            showToast('Info', 'Preparing PDF…', 'info');
+            $.ajax({
+                url: 'get_invoice_details', method: 'POST',
+                data: { invoice_id: id }, dataType: 'json',
+                success: function (res) {
+                    if (res.status) {
+                        doDownloadPdf(res.invoice, res.schedules, res.outstanding || []);
+                    } else {
+                        showToast('Error', res.message || 'Failed to load invoice.', 'error');
+                    }
+                },
+                error: function () { showToast('Error', 'Failed to load invoice.', 'error'); }
+            });
         }
 
         // ─── Email Modal ──────────────────────────────────────────────────────────
         function openEmailModal(id, number, email) {
             selectedInvoiceId = id;
-            document.getElementById('emailInvoiceNum').textContent  = number;
-            document.getElementById('emailRecipient').textContent   = email || 'No email on file';
+            document.getElementById('emailInvoiceNum').textContent = number;
+            document.getElementById('emailRecipient').textContent = email || 'No email on file';
             document.getElementById('emailModal').classList.add('active');
         }
         function closeEmailModal() {
@@ -1087,13 +1371,13 @@
         // ─── Toast ────────────────────────────────────────────────────────────────
         function showToast(title, message, type = 'success') {
             const toast = document.getElementById('toast');
-            const icon  = document.getElementById('toastIcon');
-            document.getElementById('toastTitle').textContent   = title;
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastTitle').textContent = title;
             document.getElementById('toastMessage').textContent = message;
             toast.className = 'toast ' + (type !== 'success' ? type : '');
-            icon.className  = type === 'success' ? 'fas fa-check-circle text-[#99CC33] mr-3 text-xl'
-                            : type === 'error'   ? 'fas fa-times-circle text-red-500 mr-3 text-xl'
-                            : 'fas fa-exclamation-circle text-yellow-500 mr-3 text-xl';
+            icon.className = type === 'success' ? 'fas fa-check-circle text-[#99CC33] mr-3 text-xl'
+                : type === 'error' ? 'fas fa-times-circle text-red-500 mr-3 text-xl'
+                    : 'fas fa-exclamation-circle text-yellow-500 mr-3 text-xl';
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 4000);
         }
@@ -1101,12 +1385,12 @@
         // ─── Helpers ──────────────────────────────────────────────────────────────
         function dueBadge(due_date, status) {
             if (!due_date || status === 'paid' || status === 'cancelled') return '';
-            const today = new Date(); today.setHours(0,0,0,0);
-            const due   = new Date(due_date + 'T00:00:00');
-            const days  = Math.round((due - today) / 86400000);
-            if (days < 0)  return `<span class="status-badge mt-1" style="background:#fee2e2;color:#ef4444;display:block;">${Math.abs(days)}d overdue</span>`;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const due = new Date(due_date + 'T00:00:00');
+            const days = Math.round((due - today) / 86400000);
+            if (days < 0) return `<span class="status-badge mt-1" style="background:#fee2e2;color:#ef4444;display:block;">${Math.abs(days)}d overdue</span>`;
             if (days === 0) return `<span class="status-badge mt-1" style="background:#fee2e2;color:#ef4444;display:block;">Due today</span>`;
-            if (days <= 7)  return `<span class="status-badge mt-1" style="background:#fef9c3;color:#a16207;display:block;">${days}d left</span>`;
+            if (days <= 7) return `<span class="status-badge mt-1" style="background:#fef9c3;color:#a16207;display:block;">${days}d left</span>`;
             return `<span class="status-badge mt-1" style="background:#dcfce7;color:#15803d;display:block;">${days}d left</span>`;
         }
 
@@ -1120,8 +1404,9 @@
         }
         function escHtml(str) {
             if (!str) return '';
-            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
     </script>
 </body>
+
 </html>

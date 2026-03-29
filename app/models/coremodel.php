@@ -1315,6 +1315,18 @@ class CoreModel
 
     public function delete_staff($staff_id) {
         try {
+            // Check if staff exists
+            $staffInfo = $this->getStaffInfo($staff_id);
+
+            if (empty($staffInfo)) {
+                throw new Exception("Staff not found with ID: " . $staff_id);
+            }
+
+            if($staffInfo['is_admin']) {
+                throw new Exception("Cannot delete admin staff");
+            }
+
+            // Delete staff
             $query = "DELETE FROM staffs WHERE staff_id = ?";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param('i', $staff_id);

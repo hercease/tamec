@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,145 +9,406 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #99CC33; border-radius: 5px; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
 
-        .sidebar { transform: translateX(-100%); }
-        .sidebar.open { transform: translateX(0); }
-        @media (min-width: 1024px) { .sidebar { transform: translateX(0); } }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #99CC33;
+            border-radius: 5px;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+        }
 
         .overlay {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 30; opacity: 0; visibility: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
-        .overlay.active { opacity: 1; visibility: visible; }
 
-        .card-hover { transition: all 0.2s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .card-hover {
+            transition: all 0.2s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
 
         .modal {
-            display: none; position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 50; justify-content: center; align-items: center;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
         }
-        .modal.active { display: flex; }
+
+        .modal.active {
+            display: flex;
+        }
+
         .modal-content {
-            background-color: white; border-radius: 0.75rem;
-            max-width: 800px; width: 90%; max-height: 90vh;
-            overflow-y: auto; animation: slideIn 0.3s ease;
+            background-color: white;
+            border-radius: 0.75rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
         }
-        .modal-content.wide { max-width: 1000px; }
+
+        .modal-content.wide {
+            max-width: 1000px;
+        }
+
         @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to   { transform: translateY(0);     opacity: 1; }
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .table-container {
-            background: white; border-radius: 0.75rem;
-            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); overflow-x: auto; overflow-y: hidden;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
         }
-        .payroll-table { width: 100%; min-width: 820px; border-collapse: collapse; }
-        .payroll-table th {
-            background: #f9fafb; padding: 1rem 1.5rem; text-align: left;
-            font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-            color: #6b7280; border-bottom: 1px solid #e5e7eb;
-        }
-        .payroll-table td {
-            padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb;
-            color: #374151; font-size: 0.875rem;
-        }
-        .payroll-table tbody tr:hover { background: #f9fafb; }
 
-        .schedules-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
-        .schedules-table th {
-            background: #f3f4f6; padding: 0.625rem 1rem; text-align: left;
-            font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-            color: #6b7280; border-bottom: 1px solid #e5e7eb;
+        .payroll-table {
+            width: 100%;
+            min-width: 820px;
+            border-collapse: collapse;
         }
-        .schedules-table td { padding: 0.625rem 1rem; border-bottom: 1px solid #f3f4f6; color: #374151; }
-        .schedules-table tbody tr:hover { background: #fafafa; }
+
+        .payroll-table th {
+            background: #f9fafb;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .payroll-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .payroll-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .schedules-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .schedules-table th {
+            background: #f3f4f6;
+            padding: 0.625rem 1rem;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .schedules-table td {
+            padding: 0.625rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+        }
+
+        .schedules-table tbody tr:hover {
+            background: #fafafa;
+        }
 
         .status-badge {
-            padding: 0.25rem 0.75rem; border-radius: 9999px;
-            font-size: 0.75rem; font-weight: 600; display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
         }
-        .status-draft      { background: #f3f4f6; color: #6b7280; }
-        .status-processed  { background: #dbeafe; color: #1d4ed8; }
-        .status-paid       { background: #dcfce7; color: #15803d; }
-        .status-cancelled  { background: #fee2e2; color: #ef4444; }
+
+        .status-draft {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-processed {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-paid {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #ef4444;
+        }
 
         .sched-badge {
-            padding: 0.15rem 0.5rem; border-radius: 9999px;
-            font-size: 0.7rem; font-weight: 600; display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
         }
-        .sched-scheduled  { background: #e0f2fe; color: #0369a1; }
-        .sched-in-progress { background: #fef9c3; color: #a16207; }
-        .sched-completed   { background: #dcfce7; color: #15803d; }
-        .sched-cancelled   { background: #fee2e2; color: #ef4444; }
-        .sched-no-show     { background: #f3f4f6; color: #6b7280; }
 
-        .action-btn { padding: 0.5rem; border-radius: 0.375rem; transition: all 0.2s; cursor: pointer; }
-        .action-btn:hover { background-color: #f3f4f6; }
-        .action-btn.view:hover        { color: #003366; }
-        .action-btn.change-status:hover { color: #7c3aed; }
-        .action-btn.delete:hover      { color: #EF4444; }
+        .sched-scheduled {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .sched-in-progress {
+            background: #fef9c3;
+            color: #a16207;
+        }
+
+        .sched-completed {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .sched-cancelled {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .sched-no-show {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .action-btn:hover {
+            background-color: #f3f4f6;
+        }
+
+        .action-btn.view:hover {
+            color: #003366;
+        }
+
+        .action-btn.print:hover {
+            color: #0369a1;
+        }
+
+        .action-btn.pdf:hover {
+            color: #dc2626;
+        }
+
+        .action-btn.change-status:hover {
+            color: #7c3aed;
+        }
+
+        .action-btn.delete:hover {
+            color: #EF4444;
+        }
 
         .filter-bar {
-            display: flex; flex-wrap: wrap; gap: 1rem;
-            align-items: center; justify-content: space-between; margin-bottom: 1.5rem;
-        }
-        .search-box { flex: 1; min-width: 280px; position: relative; }
-        .search-box input {
-            width: 100%; padding: 0.625rem 1rem 0.625rem 2.5rem;
-            border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.875rem;
-        }
-        .search-box i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #9ca3af; }
-        .filter-select {
-            padding: 0.625rem 2rem 0.625rem 1rem;
-            border: 1px solid #d1d5db; border-radius: 0.5rem;
-            font-size: 0.875rem; background-color: white; cursor: pointer;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
         }
 
-        .form-label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.375rem; }
-        .form-input, .form-select, .form-textarea {
-            width: 100%; padding: 0.625rem 1rem;
-            border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.875rem;
+        .search-box {
+            flex: 1;
+            min-width: 280px;
+            position: relative;
         }
-        .form-textarea { resize: vertical; min-height: 80px; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            outline: none; border-color: #99CC33;
-            box-shadow: 0 0 0 3px rgba(153,204,51,0.2);
+
+        .search-box input {
+            width: 100%;
+            padding: 0.625rem 1rem 0.625rem 2.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .filter-select {
+            padding: 0.625rem 2rem 0.625rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.375rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #99CC33;
+            box-shadow: 0 0 0 3px rgba(153, 204, 51, 0.2);
         }
 
         .toast {
-            position: fixed; top: 20px; right: 20px;
-            padding: 1rem 1.5rem; background-color: white;
-            border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            z-index: 100; transform: translateX(400px);
-            transition: transform 0.3s ease; border-left: 4px solid #99CC33;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            border-left: 4px solid #99CC33;
         }
-        .toast.show { transform: translateX(0); }
-        .toast.success { border-left-color: #99CC33; }
-        .toast.error   { border-left-color: #EF4444; }
-        .toast.warning { border-left-color: #F59E0B; }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: #99CC33;
+        }
+
+        .toast.error {
+            border-left-color: #EF4444;
+        }
+
+        .toast.warning {
+            border-left-color: #F59E0B;
+        }
 
         @media (max-width: 768px) {
-            .filter-bar { flex-direction: column; align-items: stretch; }
-            .search-box { min-width: 100%; }
-            .payroll-table th, .payroll-table td { padding: 0.75rem 1rem; }
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            .payroll-table th,
+            .payroll-table td {
+                padding: 0.75rem 1rem;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #printArea,
+            #printArea * {
+                visibility: visible;
+            }
+
+            #printArea {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
     <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
@@ -169,7 +431,8 @@
                     </div>
                     <?php $navName = htmlspecialchars($_SESSION['tamec_name'] ?? 'Admin'); ?>
                     <div class="flex items-center space-x-2 pl-3 border-l border-gray-100">
-                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($navName); ?>&background=003366&color=fff&size=32" class="w-8 h-8 rounded-full">
+                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($navName); ?>&background=003366&color=fff&size=32"
+                            class="w-8 h-8 rounded-full">
                         <div class="hidden sm:block">
                             <p class="text-xs font-semibold text-gray-800 leading-tight"><?php echo $navName; ?></p>
                             <p class="text-xs text-[#99CC33] leading-tight">Administrator</p>
@@ -187,7 +450,8 @@
                     <h1 class="text-2xl sm:text-3xl font-bold text-black">Payroll</h1>
                     <p class="text-gray-600 mt-1 text-sm sm:text-base">Manage and generate staff pay runs</p>
                 </div>
-                <a href="create_payroll" class="mt-4 sm:mt-0 px-4 py-2 bg-[#99CC33] text-white text-sm rounded-lg hover:bg-[#88BB22] transition flex items-center">
+                <a href="create_payroll"
+                    class="mt-4 sm:mt-0 px-4 py-2 bg-[#99CC33] text-white text-sm rounded-lg hover:bg-[#88BB22] transition flex items-center">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Generate Payroll
                 </a>
@@ -245,7 +509,8 @@
             <div class="filter-bar">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search by payroll number or notes..." onkeyup="applyFilters()">
+                    <input type="text" id="searchInput" placeholder="Search by payroll number or notes..."
+                        onkeyup="applyFilters()">
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <select id="statusFilter" class="filter-select" onchange="applyFilters()">
@@ -316,7 +581,8 @@
                         </div>
                         <div>
                             <label class="form-label">Notes</label>
-                            <textarea id="payrollNotes" class="form-textarea" placeholder="Optional notes for this payroll run..."></textarea>
+                            <textarea id="payrollNotes" class="form-textarea"
+                                placeholder="Optional notes for this payroll run..."></textarea>
                         </div>
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
                             <i class="fas fa-info-circle mr-2"></i>
@@ -324,10 +590,12 @@
                         </div>
                     </div>
                     <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" onclick="closeGenerateModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                        <button type="button" onclick="closeGenerateModal()"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
                             Cancel
                         </button>
-                        <button type="submit" id="generateBtn" class="px-4 py-2 bg-[#99CC33] text-white rounded-lg text-sm hover:bg-[#88BB22] transition flex items-center">
+                        <button type="submit" id="generateBtn"
+                            class="px-4 py-2 bg-[#99CC33] text-white rounded-lg text-sm hover:bg-[#88BB22] transition flex items-center">
                             <i class="fas fa-cog mr-2"></i>
                             Generate
                         </button>
@@ -351,7 +619,8 @@
                     <!-- Populated by JS -->
                 </div>
                 <div class="flex justify-end mt-6">
-                    <button onclick="closeViewModal()" class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition">
+                    <button onclick="closeViewModal()"
+                        class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition">
                         Close
                     </button>
                 </div>
@@ -380,10 +649,12 @@
                     </select>
                 </div>
                 <div class="flex justify-end space-x-3">
-                    <button onclick="closeStatusModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                    <button onclick="closeStatusModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
                         Cancel
                     </button>
-                    <button onclick="confirmStatusChange()" id="statusSaveBtn" class="px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm hover:bg-[#6d28d9] transition flex items-center gap-2">
+                    <button onclick="confirmStatusChange()" id="statusSaveBtn"
+                        class="px-4 py-2 bg-[#7c3aed] text-white rounded-lg text-sm hover:bg-[#6d28d9] transition flex items-center gap-2">
                         <i class="fas fa-save"></i>
                         Save Status
                     </button>
@@ -401,13 +672,16 @@
                         <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
                     </div>
                     <h3 class="text-xl font-bold text-black mb-2">Delete Payroll</h3>
-                    <p class="text-gray-600 mb-2">Are you sure you want to delete <strong id="deletePayrollNum"></strong>?</p>
+                    <p class="text-gray-600 mb-2">Are you sure you want to delete <strong
+                            id="deletePayrollNum"></strong>?</p>
                     <p class="text-sm text-amber-600 mb-6">All linked schedules will be reset to pending status.</p>
                     <div class="flex justify-center space-x-3">
-                        <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                        <button onclick="closeDeleteModal()"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
                             Cancel
                         </button>
-                        <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition">
+                        <button onclick="confirmDelete()"
+                            class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition">
                             Delete Payroll
                         </button>
                     </div>
@@ -415,6 +689,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden print area -->
+    <div id="printArea" style="display:none;"></div>
 
     <!-- Toast -->
     <div id="toast" class="toast">
@@ -472,7 +749,7 @@
         function updateStats() {
             document.getElementById('statTotal').textContent = payrolls.length;
             document.getElementById('statDraft').textContent = payrolls.filter(p => p.status === 'draft').length;
-            document.getElementById('statPaid').textContent  = payrolls.filter(p => p.status === 'paid').length;
+            document.getElementById('statPaid').textContent = payrolls.filter(p => p.status === 'paid').length;
             const total = payrolls.reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0);
             document.getElementById('statAmount').textContent = '$' + total.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
@@ -497,7 +774,7 @@
         function renderTable() {
             const tbody = document.getElementById('payrollTableBody');
             const start = (currentPage - 1) * itemsPerPage;
-            const page  = filteredPayrolls.slice(start, start + itemsPerPage);
+            const page = filteredPayrolls.slice(start, start + itemsPerPage);
 
             if (page.length === 0) {
                 tbody.innerHTML = `
@@ -536,6 +813,12 @@
                             <button onclick="viewPayroll(${p.payroll_id})" class="action-btn view" title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            <button onclick="printPayroll(${p.payroll_id})" class="action-btn print" title="Print">
+                                <i class="fas fa-print"></i>
+                            </button>
+                            <button onclick="downloadPayrollPdf(${p.payroll_id})" class="action-btn pdf" title="Download PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
                             <button onclick="openStatusModal(${p.payroll_id}, '${escHtml(p.payroll_number)}', '${p.status}')" class="action-btn change-status" title="Change Status">
                                 <i class="fas fa-exchange-alt"></i>
                             </button>
@@ -562,10 +845,10 @@
 
         // ─── Pagination ───────────────────────────────────────────────────────────
         function updatePagination() {
-            const total      = filteredPayrolls.length;
+            const total = filteredPayrolls.length;
             const totalPages = Math.ceil(total / itemsPerPage);
-            const start      = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
-            const end        = Math.min(currentPage * itemsPerPage, total);
+            const start = total > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+            const end = Math.min(currentPage * itemsPerPage, total);
 
             document.getElementById('paginationInfo').textContent = `Showing ${start}–${end} of ${total} payrolls`;
 
@@ -617,8 +900,8 @@
                 method: 'POST',
                 data: {
                     period_start: document.getElementById('periodStart').value,
-                    period_end:   document.getElementById('periodEnd').value,
-                    notes:        document.getElementById('payrollNotes').value
+                    period_end: document.getElementById('periodEnd').value,
+                    notes: document.getElementById('payrollNotes').value
                 },
                 dataType: 'json',
                 success: function (res) {
@@ -826,6 +1109,185 @@
             });
         }
 
+        // ─── Payroll PDF / Print ──────────────────────────────────────────────────
+        function buildPayrollHtml(p, schedules) {
+            function fmtSlash(s) {
+                if (!s) return '—';
+                const parts = s.split('-');
+                return parts[1] + '/' + parts[2] + '/' + parts[0].slice(2);
+            }
+            function fmtLong(s) {
+                if (!s) return '—';
+                return new Date(s + 'T00:00:00').toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+            function fmtAmt(n) {
+                return '$' + parseFloat(n || 0).toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            const logoUrl = window.location.origin
+                + window.location.pathname.replace(/\/[^\/]*$/, '/')
+                + 'public/images/tameclogo.png';
+
+            const rows = schedules.map(function (s) {
+                const hp = parseFloat(s.holiday_pay || 0);
+                const rate = parseFloat(s.pay_per_hour || 0);
+                const holTag = hp > 0 ? ' <em style="color:#c2410c;font-size:11px;">(Holiday +$' + hp.toFixed(2) + ')</em>' : '';
+                return '<tr>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;">' + escHtml(s.staff_name || '') + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">' + escHtml(s.client_name || '') + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;">' + fmtSlash(s.schedule_date) + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;text-transform:capitalize;">' + (s.shift_type || '') + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;color:#374151;">' + parseFloat(s.hours_worked || 0).toFixed(2) + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-size:13px;color:#374151;">' + fmtAmt(rate) + '/hr' + holTag + '</td>'
+                    + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;font-size:13px;color:#111827;">' + fmtAmt(s.amount) + '</td>'
+                    + '</tr>';
+            }).join('');
+
+            const totalHours = parseFloat(p.total_hours || 0);
+            const totalAmount = parseFloat(p.total_amount || 0);
+
+            const notesHtml = p.notes
+                ? '<div style="margin-top:20px;font-size:13px;color:#374151;"><strong>Notes:</strong> ' + escHtml(p.notes) + '</div>'
+                : '';
+
+            const styles = ''
+                + '* { box-sizing:border-box; margin:0; padding:0; }'
+                + 'body { font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; color:#1f2937; background:#fff; -webkit-font-smoothing:antialiased; }'
+                + '.page { padding:32px 40px; max-width:900px; margin:0 auto; }'
+                + '.co-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }'
+                + '.co-name { font-size:14px; font-weight:800; color:#111827; letter-spacing:.3px; }'
+                + '.co-addr { font-size:12px; color:#4b5563; line-height:1.75; margin-top:4px; }'
+                + '.logo img { max-height:72px; }'
+                + '.pr-title-bar { display:flex; justify-content:space-between; align-items:flex-end; border-top:3px solid #003366; padding-top:14px; margin-bottom:18px; }'
+                + '.pr-title { font-size:38px; font-weight:900; color:#003366; letter-spacing:2px; }'
+                + '.bd-label { font-size:12px; color:#6b7280; font-weight:700; text-align:right; text-transform:uppercase; letter-spacing:.3px; }'
+                + '.bd-amount { font-size:24px; font-weight:800; color:#003366; text-align:right; }'
+                + '.meta-box { display:flex; justify-content:space-between; gap:40px; margin-bottom:22px; padding:14px 16px; border:1px solid #e5e7eb; border-radius:4px; background:#fafafa; }'
+                + '.bt-label { font-size:11px; font-weight:700; text-transform:uppercase; color:#9ca3af; margin-bottom:5px; letter-spacing:.5px; }'
+                + '.meta-tbl { border-collapse:collapse; font-size:13px; }'
+                + '.meta-tbl td { padding:3px 14px 3px 0; color:#374151; vertical-align:top; }'
+                + '.meta-tbl td:first-child { font-weight:700; color:#003366; white-space:nowrap; }'
+                + 'table.svc { width:100%; border-collapse:collapse; margin-bottom:16px; }'
+                + 'table.svc thead tr { background:#003366; }'
+                + 'table.svc th { padding:9px 10px; color:#fff; font-size:11px; font-weight:700; text-align:left; text-transform:uppercase; letter-spacing:.5px; }'
+                + 'table.svc th.r { text-align:right; }'
+                + 'table.svc tbody tr:nth-child(even) { background:#f9fafb; }'
+                + 'table.svc td.r { text-align:right; }'
+                + '.tot-wrap { display:flex; justify-content:flex-end; margin-bottom:24px; }'
+                + '.tot-tbl { border-collapse:collapse; font-size:13px; min-width:280px; }'
+                + '.tot-tbl td { padding:5px 10px; }'
+                + '.tot-tbl td:last-child { text-align:right; font-weight:700; }'
+                + '.tot-tbl .ttl td { border-top:2px solid #003366; padding-top:10px; font-size:15px; font-weight:800; color:#003366; background:#f0f4ff; }'
+                + '.footer { margin-top:30px; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#9ca3af; text-align:center; }'
+                + '@media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } @page { size:A4; margin:1.5cm; } }';
+
+            const body = '<div class="page">'
+                + '<div class="co-header">'
+                + '<div>'
+                + '<div class="co-name">TAMEC CARE STAFFING SERVICES LTD</div>'
+                + '<div class="co-addr">3100 STEELES AVENUE WEST<br>403<br>CONCORD, ONTARIO L4K 3R1<br>info@tameccarestaffing.com</div>'
+                + '</div>'
+                + '<div class="logo"><img src="' + logoUrl + '" alt="TAMEC" onerror="this.style.display=\'none\'"></div>'
+                + '</div>'
+                + '<div class="pr-title-bar">'
+                + '<div class="pr-title">PAYROLL</div>'
+                + '<div>'
+                + '<div class="bd-label">Total Payout</div>'
+                + '<div class="bd-amount">' + fmtAmt(totalAmount) + '</div>'
+                + '</div>'
+                + '</div>'
+                + '<div class="meta-box">'
+                + '<table class="meta-tbl">'
+                + '<tr><td>Payroll #</td><td>' + escHtml(p.payroll_number) + '</td></tr>'
+                + '<tr><td>Period</td><td>' + fmtSlash(p.period_start) + ' — ' + fmtSlash(p.period_end) + '</td></tr>'
+                + '<tr><td>Status</td><td>' + capitalize(p.status || '') + '</td></tr>'
+                + '<tr><td>Staff Count</td><td>' + (p.total_staff || 0) + '</td></tr>'
+                + '<tr><td>Total Hours</td><td>' + totalHours.toFixed(2) + ' hrs</td></tr>'
+                + '</table>'
+                + '</div>'
+                + '<table class="svc">'
+                + '<thead><tr>'
+                + '<th>Staff</th>'
+                + '<th>Client</th>'
+                + '<th>Date</th>'
+                + '<th>Shift</th>'
+                + '<th class="r">Hours</th>'
+                + '<th class="r">Rate</th>'
+                + '<th class="r">Amount</th>'
+                + '</tr></thead>'
+                + '<tbody>' + rows + '</tbody>'
+                + '</table>'
+                + '<div class="tot-wrap"><table class="tot-tbl">'
+                + '<tr><td>Total Hours</td><td>' + totalHours.toFixed(2) + ' hrs</td></tr>'
+                + '<tr class="ttl"><td>Total Payout</td><td>' + fmtAmt(totalAmount) + '</td></tr>'
+                + '</table></div>'
+                + notesHtml
+                + '<div class="footer">Payroll generated on ' + fmtLong(p.created_at ? p.created_at.slice(0, 10) : null) + ' — TAMEC Care Staffing Services Ltd</div>'
+                + '</div>';
+
+            return { styles: styles, body: body };
+        }
+
+        function doPrintPayroll(p, schedules) {
+            const doc = buildPayrollHtml(p, schedules);
+            const win = window.open('', '_blank');
+            win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payroll ' + escHtml(p.payroll_number) + '</title><style>' + doc.styles + '</style></head><body>' + doc.body + '</body></html>');
+            win.document.close();
+            win.focus();
+            setTimeout(function () { win.print(); }, 500);
+        }
+
+        function doDownloadPayrollPdf(p, schedules) {
+            const doc = buildPayrollHtml(p, schedules);
+            // Build a full self-contained HTML page string and pass it to html2pdf
+            // Using .from(html, 'string') renders inside an internal iframe — no
+            // DOM append needed, so blank-page issues are avoided entirely.
+            const fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+                + '<style>' + doc.styles + '</style></head><body>' + doc.body + '</body></html>';
+
+            html2pdf()
+                .set({
+                    margin: [8, 8, 8, 8],
+                    filename: 'Payroll-' + p.payroll_number + '.pdf',
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                })
+                .from(fullHtml, 'string')
+                .save();
+        }
+
+        function downloadPayrollPdf(id) {
+            showToast('Info', 'Preparing PDF…', 'warning');
+            $.ajax({
+                url: 'get_payroll_details', method: 'POST',
+                data: { payroll_id: id }, dataType: 'json',
+                success: function (res) {
+                    if (res.status) {
+                        doDownloadPayrollPdf(res.payroll, res.schedules);
+                    } else {
+                        showToast('Error', res.message || 'Failed to load payroll.', 'error');
+                    }
+                },
+                error: function () { showToast('Error', 'Failed to load payroll.', 'error'); }
+            });
+        }
+
+        function printPayroll(id) {
+            showToast('Info', 'Preparing print…', 'warning');
+            $.ajax({
+                url: 'get_payroll_details', method: 'POST',
+                data: { payroll_id: id }, dataType: 'json',
+                success: function (res) {
+                    if (res.status) {
+                        doPrintPayroll(res.payroll, res.schedules);
+                    } else {
+                        showToast('Error', res.message || 'Failed to load payroll.', 'error');
+                    }
+                },
+                error: function () { showToast('Error', 'Failed to load payroll.', 'error'); }
+            });
+        }
+
         // ─── Sidebar ──────────────────────────────────────────────────────────────
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -841,8 +1303,8 @@
         // ─── Toast ────────────────────────────────────────────────────────────────
         function showToast(title, message, type = 'success') {
             const toast = document.getElementById('toast');
-            const icon  = document.getElementById('toastIcon');
-            document.getElementById('toastTitle').textContent   = title;
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastTitle').textContent = title;
             document.getElementById('toastMessage').textContent = message;
 
             toast.className = `toast ${type}`;
@@ -864,7 +1326,7 @@
             if (!str) return '—';
             const d = new Date(str);
             return d.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
-                 + ' ' + d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
+                + ' ' + d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
         }
         function capitalize(str) {
             return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
@@ -879,4 +1341,5 @@
         }
     </script>
 </body>
+
 </html>
