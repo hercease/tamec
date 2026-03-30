@@ -117,6 +117,7 @@ $routes = [
         '/fetch_user_documents'         => fn() => $coreController->fetch_user_documents(),
         '/save_user_document'           => fn() => $coreController->save_user_document(),
         '/fetch_all_activities'         => fn() => $coreController->fetch_all_activities(),
+        '/delete_schedule'              => fn() => $coreController->delete_schedule(),
     ]
 ];
 

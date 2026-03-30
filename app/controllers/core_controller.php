@@ -461,6 +461,30 @@ class CoreController
         }
     }
 
+    public function delete_schedule()
+    {
+        try {
+            if (!isset($_POST['schedule_id']) || empty(trim($_POST['schedule_id']))) {
+                throw new Exception("Missing required field: schedule_id");
+            }
+            $schedule_id = (int) $this->coreModel->sanitizeInput($_POST['schedule_id']);
+            $result = $this->coreModel->delete_schedule($schedule_id);
+
+            if (!empty($result['status'])) {
+                $this->coreModel->logActivity(
+                    'delete',
+                    'Schedule Deleted',
+                    'Deleted schedule ID: ' . $schedule_id,
+                    'schedule'
+                );
+            }
+
+            echo json_encode($result);
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
     public function fetch_schedules_for_invoice()
     {
         try {
