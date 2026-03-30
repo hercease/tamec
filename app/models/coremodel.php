@@ -1,5 +1,5 @@
 <?php
-use PHPMailer\PHPMailer\PHPMailer; 
+use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 use PHPMailer\PHPMailer\SMTP;
 class CoreModel
@@ -17,7 +17,8 @@ class CoreModel
         return $protocol . $_SERVER['HTTP_HOST'];
     }
 
-    public function sanitizeInput($data) {
+    public function sanitizeInput($data)
+    {
         if (is_array($data)) {
             // Loop through each element of the array and sanitize recursively
             foreach ($data as $key => $value) {
@@ -32,13 +33,14 @@ class CoreModel
         return $data;
     }
 
-    public function sendmail($email, $name, $body, $subject){
+    public function sendmail($email, $name, $body, $subject)
+    {
         require_once 'PHPMailer/src/Exception.php';
         require_once 'PHPMailer/src/PHPMailer.php';
         require_once 'PHPMailer/src/SMTP.php';
 
         $mail = new PHPMailer(true);
-        
+
         $response = [
             'status' => false,
             'message' => '',
@@ -46,39 +48,39 @@ class CoreModel
             'email' => $email,
             'subject' => $subject
         ];
-        
+
         // Quick validation
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $response['message'] = 'Invalid email address';
             $response['error'] = 'VALIDATION_ERROR';
             return $response;
         }
-       
+
 
         try {
             // Server settings
             $mail->isSMTP();
-            $mail->Host       = $_ENV['SMTP_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['SMTP_USERNAME'];
-            $mail->Password   = $_ENV['SMTP_PASSWORD'];
+            $mail->Host = $_ENV['SMTP_HOST'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $_ENV['SMTP_USERNAME'];
+            $mail->Password = $_ENV['SMTP_PASSWORD'];
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;
-            $mail->Timeout    = 15; // 15 second timeout
-            
+            $mail->Port = 465;
+            $mail->Timeout = 15; // 15 second timeout
+
             // Recipients
             $mail->setFrom($_ENV['SMTP_FROM_EMAIL'], 'TAMEC Care Staffing Services');
             $mail->addAddress($email, $name);
-            
+
             // Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
-            $mail->Body    = $body;
+            $mail->Body = $body;
             $mail->AltBody = strip_tags($body); // Plain text version
 
             // Send and capture result
             $sendResult = $mail->send();
-            
+
             if ($sendResult) {
                 $response['status'] = true;
                 $response['message'] = 'Email sent successfully';
@@ -87,18 +89,19 @@ class CoreModel
                 $response['status'] = false;
                 $response['error'] = $mail->ErrorInfo;
             }
-            
+
             $mail->clearAddresses();
-            
+
         } catch (Exception $e) {
             $response['message'] = 'Email sending failed';
             $response['error'] = $e->getMessage();
         }
-        
+
         return $response;
     }
 
-    public function dashboardStats() {
+    public function dashboardStats()
+    {
         date_default_timezone_set('America/Toronto');
         $stats = [];
 
@@ -198,7 +201,7 @@ class CoreModel
         } catch (Exception $e) {
             // Log the error
             error_log("Dashboard stats error: " . $e->getMessage());
-            
+
             // Return error information (optional)
             return [
                 'error' => true,
@@ -210,10 +213,11 @@ class CoreModel
         return $stats;
     }
 
-    public function getTimeGreeting($name = null) {
+    public function getTimeGreeting($name = null)
+    {
         date_default_timezone_set('America/Toronto');
-        $hour = (int)date('H');
-        
+        $hour = (int) date('H');
+
         if ($hour < 12) {
             $greeting = "Good morning";
         } elseif ($hour < 17) {
@@ -223,24 +227,26 @@ class CoreModel
         } else {
             $greeting = "Good night";
         }
-        
+
         return $name ? "{$greeting}, {$name}!" : "{$greeting}!";
     }
 
 
-    public function getFormattedDateWithWeek() {
+    public function getFormattedDateWithWeek()
+    {
         date_default_timezone_set('America/Toronto');
-        
+
         $formattedDate = date('l, F j, Y'); // Tuesday, March 4, 2026
         $weekNumber = date('W'); // Week number (01-52)
-        
+
         return $formattedDate . ' • Week ' . ltrim($weekNumber, '0');
     }
 
-    public function todayschedule() {
+    public function todayschedule()
+    {
         date_default_timezone_set('America/Toronto');
         $today = date('Y-m-d');
-        
+
         try {
             $query = "
                 SELECT 
@@ -310,44 +316,44 @@ class CoreModel
                     END,
                     s.start_time ASC
             ";
-            
+
             // Prepare statement
             $stmt = $this->db->prepare($query);
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $this->db->error);
             }
-            
+
             // Bind parameter
             $stmt->bind_param('s', $today);
-            
+
             // Execute
             if (!$stmt->execute()) {
                 throw new Exception("Execute failed: " . $stmt->error);
             }
-            
+
             // Get result
             $result = $stmt->get_result();
             $schedules = [];
             while ($row = $result->fetch_assoc()) {
                 $schedules[] = $row;
             }
-            
+
             $stmt->close();
-            
+
             // Group schedules by shift type
             $groupedSchedules = [
                 'day' => [],
                 'evening' => [],
                 'overnight' => []
             ];
-            
+
             foreach ($schedules as $schedule) {
                 $shiftType = $schedule['shift_type'];
                 if (in_array($shiftType, ['day', 'evening', 'overnight'])) {
                     $groupedSchedules[$shiftType][] = $schedule;
                 }
             }
-            
+
             // Get shift counts
             $shiftCounts = [
                 'day' => count($groupedSchedules['day']),
@@ -356,7 +362,7 @@ class CoreModel
                 'total' => count($schedules),
                 'total_staff' => count(array_unique(array_column($schedules, 'staff_id')))
             ];
-            
+
             return [
                 'success' => true,
                 'data' => $schedules,
@@ -365,7 +371,7 @@ class CoreModel
                 'date' => $today,
                 'date_formatted' => date('F j, Y', strtotime($today))
             ];
-            
+
         } catch (Exception $e) {
             error_log("Error fetching today's schedule: " . $e->getMessage());
             return [
@@ -376,10 +382,11 @@ class CoreModel
         }
     }
 
-    public function staffAvailability() {
+    public function staffAvailability()
+    {
         date_default_timezone_set('America/Toronto');
         $today = date('Y-m-d');
-        
+
         try {
             // First, get ALL active staff
             $allStaffQuery = "
@@ -392,12 +399,12 @@ class CoreModel
                 WHERE is_active = TRUE
                 ORDER BY firstname ASC
             ";
-            
+
             $staffResult = $this->db->query($allStaffQuery);
             if (!$staffResult) {
                 throw new Exception("Failed to fetch staff: " . $this->db->error);
             }
-            
+
             // Get all staff IDs for reference
             $allStaffs = [];
             $staffMap = []; // For quick lookup
@@ -420,7 +427,7 @@ class CoreModel
                 $allStaffs[] = $staffId;
             }
             $staffResult->free();
-            
+
             // Now get today's schedules for staff
             $scheduleQuery = "
                 SELECT 
@@ -441,27 +448,27 @@ class CoreModel
                 AND s.user_id IN (" . implode(',', array_map('intval', $allStaffs)) . ")
                 ORDER BY s.start_time ASC
             ";
-            
+
             $scheduleResult = $this->db->query($scheduleQuery);
             if (!$scheduleResult) {
                 throw new Exception("Failed to fetch schedules: " . $this->db->error);
             }
-            
+
             // Track staff with schedules
             $staffWithSchedules = [];
             $locations = [];
             $availableStaffs = []; // Staff with 'scheduled' status
             $onDutyStaffs = [];    // Staff with 'in-progress' status
-            
+
             while ($schedule = $scheduleResult->fetch_assoc()) {
                 $staffId = $schedule['staff_id'];
                 $status = $schedule['status'];
                 $staffWithSchedules[] = $staffId;
-                
+
                 // Update staff map with schedule info
                 if (isset($staffMap[$staffId])) {
                     $locationName = $schedule['location_name'] ?? 'No location assigned';
-                    
+
                     // Update duty status based on schedule status
                     if ($status == 'in-progress') {
                         $staffMap[$staffId]['duty_status'] = 'on_duty';
@@ -470,14 +477,14 @@ class CoreModel
                         $staffMap[$staffId]['duty_status'] = 'available';
                         $availableStaffs[] = $staffMap[$staffId];
                     }
-                    
+
                     // Add schedule details
                     $staffMap[$staffId]['schedule_status'] = $status;
                     $staffMap[$staffId]['shift_type'] = $schedule['shift_type'];
                     $staffMap[$staffId]['location'] = $locationName;
                     $staffMap[$staffId]['start_time'] = $schedule['start_time'];
                     $staffMap[$staffId]['end_time'] = $schedule['end_time'];
-                    
+
                     // Group by location
                     if (!isset($locations[$locationName])) {
                         $locations[$locationName] = [
@@ -490,7 +497,7 @@ class CoreModel
                             ]
                         ];
                     }
-                    
+
                     $locations[$locationName]['staffs'][] = $staffMap[$staffId];
                     $locations[$locationName]['counts']['total']++;
                     if ($status == 'in-progress') {
@@ -500,26 +507,26 @@ class CoreModel
                     }
                 }
             }
-            
+
             $scheduleResult->free();
-            
+
             // Calculate counts
             $totalStaff = count($staffMap);
             $onDutyCount = count($onDutyStaffs);
             $availableCount = count($availableStaffs);
             $offDutyCount = $totalStaff - ($onDutyCount + $availableCount);
-            
+
             // Sort available staffs by name for the preview
-            usort($availableStaffs, function($a, $b) {
+            usort($availableStaffs, function ($a, $b) {
                 return strcmp($a['staff_name'], $b['staff_name']);
             });
-            
+
             // Take first 5 for preview
             $previewStaffs = array_slice($availableStaffs, 0, 5);
-            
+
             // Sort locations by name
             ksort($locations);
-            
+
             return [
                 'success' => true,
                 'summary' => [
@@ -537,7 +544,7 @@ class CoreModel
                 'date' => $today,
                 'date_formatted' => date('F j, Y', strtotime($today))
             ];
-            
+
         } catch (Exception $e) {
             error_log("Error fetching current staff assignments: " . $e->getMessage());
             return [
@@ -557,10 +564,11 @@ class CoreModel
         }
     }
 
-    public function staffAssignments() {
+    public function staffAssignments()
+    {
         date_default_timezone_set('America/Toronto');
         $today = date('Y-m-d');
-        
+
         try {
             $query = "
                 SELECT 
@@ -592,22 +600,22 @@ class CoreModel
                     l.address ASC,
                     st.firstname ASC
             ";
-            
+
             $result = $this->db->query($query);
-            
+
             if (!$result) {
                 throw new Exception("Query failed: " . $this->db->error);
             }
-            
+
             // Initialize locations array
             $locations = [];
             $allStaffCount = 0;
-            
+
             // Process results
             while ($row = $result->fetch_assoc()) {
                 $locationId = $row['location_id'];
                 $allStaffCount++;
-                
+
                 // Initialize location if not exists
                 if (!isset($locations[$locationId])) {
                     $locations[$locationId] = [
@@ -619,7 +627,7 @@ class CoreModel
                         'preview_staffs' => []
                     ];
                 }
-                
+
                 // Add staff to location
                 $staffData = [
                     'staff_id' => $row['staff_id'],
@@ -630,37 +638,37 @@ class CoreModel
                     'end_time' => $row['end_time'],
                     'avatar_url' => 'https://ui-avatars.com/api/?name=' . urlencode($row['staff_name']) . '&background=99CC33&color=fff&size=32'
                 ];
-                
+
                 $locations[$locationId]['staffs'][] = $staffData;
                 $locations[$locationId]['staff_count']++;
             }
-            
+
             $result->free();
-            
+
             // Process each location to create preview staffs (first 3 for avatar stack)
             foreach ($locations as &$location) {
                 // Sort staffs by name
-                usort($location['staffs'], function($a, $b) {
+                usort($location['staffs'], function ($a, $b) {
                     return strcmp($a['staff_name'], $b['staff_name']);
                 });
-                
+
                 // Get first 3 for preview avatars
                 $location['preview_staffs'] = array_slice($location['staffs'], 0, 3);
-                
+
                 // Format staff count display
-                $location['staff_count_display'] = $location['staff_count'] . ' ' . 
+                $location['staff_count_display'] = $location['staff_count'] . ' ' .
                     ($location['staff_count'] == 1 ? 'Staff' : 'Staffs');
-                
+
                 // Get additional count for "+X more"
                 $location['additional_count'] = max(0, $location['staff_count'] - 3);
             }
-            
+
             // Convert to indexed array and sort by location name
             $locations = array_values($locations);
-            usort($locations, function($a, $b) {
+            usort($locations, function ($a, $b) {
                 return strcmp($a['location_name'], $b['location_name']);
             });
-            
+
             return [
                 'success' => true,
                 'locations' => $locations,
@@ -669,7 +677,7 @@ class CoreModel
                 'date' => $today,
                 'date_formatted' => date('F j, Y', strtotime($today))
             ];
-            
+
         } catch (Exception $e) {
             error_log("Error fetching recent assignments: " . $e->getMessage());
             return [
@@ -683,11 +691,12 @@ class CoreModel
         }
     }
 
-        public function fetch_recent_activities($limit = 5) {
-            date_default_timezone_set('America/Toronto');
-            
-            try {
-                $query = "
+    public function fetch_recent_activities($limit = 5)
+    {
+        date_default_timezone_set('America/Toronto');
+
+        try {
+            $query = "
                     SELECT 
                         activity_id,
                         user_name,
@@ -699,338 +708,342 @@ class CoreModel
                     ORDER BY created_at DESC
                     LIMIT ?
                 ";
-                
-                $stmt = $this->db->prepare($query);
-                $stmt->bind_param('i', $limit);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                $activities = [];
-                while ($row = $result->fetch_assoc()) {
-                    // Get icon data based on activity type
-                    $iconData = $this->getActivityIcon($row['activity_type']);
-                    
-                    // Format the time ago
-                    $row['time_ago'] = $this->timeAgo($row['created_at']);
-                    
-                    // Add icon data to the row
-                    $row['icon'] = $iconData['icon'];
-                    $row['icon_bg'] = $iconData['icon_bg'];
-                    $row['icon_color'] = $iconData['icon_color'];
-                    
-                    // Use the title from icons array if not set in database
-                    if (empty($row['activity_title'])) {
-                        $row['activity_title'] = $iconData['title'];
-                    }
-                    
-                    $activities[] = $row;
-                }
-                
-                $stmt->close();
-                
-                return [
-                    'success' => true,
-                    'activities' => $activities,
-                    'total' => count($activities),
-                    'has_more' => count($activities) >= $limit
-                ];
-                
-            } catch (Exception $e) {
-                error_log("Error fetching recent activities: " . $e->getMessage());
-                return [
-                    'success' => false,
-                    'activities' => [],
-                    'total' => 0,
-                    'has_more' => false
-                ];
-            }
-        }
 
-        public function getActivityIcon($activity_type) {
-            $icons = [
-                // Authentication Activities
-                'login' => [
-                    'icon' => 'sign-in-alt',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'User Logged In'
-                ],
-                'logout' => [
-                    'icon' => 'sign-out-alt',
-                    'icon_bg' => 'bg-gray-100',
-                    'icon_color' => 'text-gray-600',
-                    'title' => 'User Logged Out'
-                ],
-                'failed_login' => [
-                    'icon' => 'exclamation-triangle',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Failed Login Attempt'
-                ],
-                
-                // CRUD Operations
-                'create' => [
-                    'icon' => 'plus-circle',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Item Created'
-                ],
-                'update' => [
-                    'icon' => 'edit',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Item Updated'
-                ],
-                'delete' => [
-                    'icon' => 'trash-alt',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Item Deleted'
-                ],
-                'view' => [
-                    'icon' => 'eye',
-                    'icon_bg' => 'bg-purple-100',
-                    'icon_color' => 'text-purple-600',
-                    'title' => 'Item Viewed'
-                ],
-                'export' => [
-                    'icon' => 'file-export',
-                    'icon_bg' => 'bg-indigo-100',
-                    'icon_color' => 'text-indigo-600',
-                    'title' => 'Data Exported'
-                ],
-                
-                // Time & Attendance
-                'clock_in' => [
-                    'icon' => 'clock',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Clock In'
-                ],
-                'clock_out' => [
-                    'icon' => 'clock',
-                    'icon_bg' => 'bg-orange-100',
-                    'icon_color' => 'text-orange-600',
-                    'title' => 'Clock Out'
-                ],
-                'start_break' => [
-                    'icon' => 'coffee',
-                    'icon_bg' => 'bg-yellow-100',
-                    'icon_color' => 'text-yellow-600',
-                    'title' => 'Break Started'
-                ],
-                'end_break' => [
-                    'icon' => 'coffee',
-                    'icon_bg' => 'bg-yellow-100',
-                    'icon_color' => 'text-yellow-600',
-                    'title' => 'Break Ended'
-                ],
-                
-                // Schedule Management
-                'schedule_created' => [
-                    'icon' => 'calendar-plus',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Schedule Created'
-                ],
-                'schedule_updated' => [
-                    'icon' => 'calendar-alt',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Schedule Updated'
-                ],
-                'schedule_cancelled' => [
-                    'icon' => 'calendar-times',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Schedule Cancelled'
-                ],
-                
-                // Payroll
-                'payroll_generated' => [
-                    'icon' => 'file-invoice-dollar',
-                    'icon_bg' => 'bg-purple-100',
-                    'icon_color' => 'text-purple-600',
-                    'title' => 'Payroll Generated'
-                ],
-                'payroll_processed' => [
-                    'icon' => 'cogs',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Payroll Processed'
-                ],
-                'payroll_paid' => [
-                    'icon' => 'money-bill-wave',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Payroll Paid'
-                ],
-                
-                // Invoices
-                'invoice_generated' => [
-                    'icon' => 'file-invoice',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Invoice Generated'
-                ],
-                'invoice_sent' => [
-                    'icon' => 'paper-plane',
-                    'icon_bg' => 'bg-indigo-100',
-                    'icon_color' => 'text-indigo-600',
-                    'title' => 'Invoice Sent'
-                ],
-                'invoice_paid' => [
-                    'icon' => 'check-circle',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Invoice Paid'
-                ],
-                
-                // Client Management
-                'client_created' => [
-                    'icon' => 'user-plus',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Client Created'
-                ],
-                'client_updated' => [
-                    'icon' => 'user-edit',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Client Updated'
-                ],
-                'client_deleted' => [
-                    'icon' => 'user-minus',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Client Deleted'
-                ],
-                
-                // Staff Management
-                'staff_created' => [
-                    'icon' => 'user-plus',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Staff Created'
-                ],
-                'staff_updated' => [
-                    'icon' => 'user-edit',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Staff Updated'
-                ],
-                'staff_deleted' => [
-                    'icon' => 'user-minus',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Staff Deleted'
-                ],
-                
-                // Location Management
-                'location_created' => [
-                    'icon' => 'map-marker-alt',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Location Created'
-                ],
-                'location_updated' => [
-                    'icon' => 'map-marker-alt',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Location Updated'
-                ],
-                'location_deleted' => [
-                    'icon' => 'map-marker-alt',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Location Deleted'
-                ],
-                
-                // Holiday Management
-                'holiday_created' => [
-                    'icon' => 'gift',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Holiday Created'
-                ],
-                'holiday_updated' => [
-                    'icon' => 'gift',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Holiday Updated'
-                ],
-                'holiday_deleted' => [
-                    'icon' => 'gift',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Holiday Deleted'
-                ],
-                
-                // Reports & Exports
-                'report_generated' => [
-                    'icon' => 'chart-bar',
-                    'icon_bg' => 'bg-purple-100',
-                    'icon_color' => 'text-purple-600',
-                    'title' => 'Report Generated'
-                ],
-                'export_completed' => [
-                    'icon' => 'file-export',
-                    'icon_bg' => 'bg-green-100',
-                    'icon_color' => 'text-green-600',
-                    'title' => 'Export Completed'
-                ],
-                'import_completed' => [
-                    'icon' => 'file-import',
-                    'icon_bg' => 'bg-blue-100',
-                    'icon_color' => 'text-blue-600',
-                    'title' => 'Import Completed'
-                ],
-                
-                // System Settings
-                'settings_changed' => [
-                    'icon' => 'cog',
-                    'icon_bg' => 'bg-gray-100',
-                    'icon_color' => 'text-gray-600',
-                    'title' => 'Settings Changed'
-                ],
-                'password_changed' => [
-                    'icon' => 'key',
-                    'icon_bg' => 'bg-yellow-100',
-                    'icon_color' => 'text-yellow-600',
-                    'title' => 'Password Changed'
-                ],
-                'permission_updated' => [
-                    'icon' => 'lock',
-                    'icon_bg' => 'bg-red-100',
-                    'icon_color' => 'text-red-600',
-                    'title' => 'Permissions Updated'
-                ]
+            $stmt = $this->db->prepare($query);
+            $stmt->bind_param('i', $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            $activities = [];
+            while ($row = $result->fetch_assoc()) {
+                // Get icon data based on activity type
+                $iconData = $this->getActivityIcon($row['activity_type']);
+
+                // Format the time ago
+                $row['time_ago'] = $this->timeAgo($row['created_at']);
+
+                // Add icon data to the row
+                $row['icon'] = $iconData['icon'];
+                $row['icon_bg'] = $iconData['icon_bg'];
+                $row['icon_color'] = $iconData['icon_color'];
+
+                // Use the title from icons array if not set in database
+                if (empty($row['activity_title'])) {
+                    $row['activity_title'] = $iconData['title'];
+                }
+
+                $activities[] = $row;
+            }
+
+            $stmt->close();
+
+            return [
+                'success' => true,
+                'activities' => $activities,
+                'total' => count($activities),
+                'has_more' => count($activities) >= $limit
             ];
-            
-            // Return icon data or default if type not found
-            return $icons[$activity_type] ?? [
-                'icon' => 'bell',
+
+        } catch (Exception $e) {
+            error_log("Error fetching recent activities: " . $e->getMessage());
+            return [
+                'success' => false,
+                'activities' => [],
+                'total' => 0,
+                'has_more' => false
+            ];
+        }
+    }
+
+    public function getActivityIcon($activity_type)
+    {
+        $icons = [
+            // Authentication Activities
+            'login' => [
+                'icon' => 'sign-in-alt',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'User Logged In'
+            ],
+            'logout' => [
+                'icon' => 'sign-out-alt',
                 'icon_bg' => 'bg-gray-100',
                 'icon_color' => 'text-gray-600',
-                'title' => 'Activity'
-            ];
-        }
+                'title' => 'User Logged Out'
+            ],
+            'failed_login' => [
+                'icon' => 'exclamation-triangle',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Failed Login Attempt'
+            ],
+
+            // CRUD Operations
+            'create' => [
+                'icon' => 'plus-circle',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Item Created'
+            ],
+            'update' => [
+                'icon' => 'edit',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Item Updated'
+            ],
+            'delete' => [
+                'icon' => 'trash-alt',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Item Deleted'
+            ],
+            'view' => [
+                'icon' => 'eye',
+                'icon_bg' => 'bg-purple-100',
+                'icon_color' => 'text-purple-600',
+                'title' => 'Item Viewed'
+            ],
+            'export' => [
+                'icon' => 'file-export',
+                'icon_bg' => 'bg-indigo-100',
+                'icon_color' => 'text-indigo-600',
+                'title' => 'Data Exported'
+            ],
+
+            // Time & Attendance
+            'clock_in' => [
+                'icon' => 'clock',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Clock In'
+            ],
+            'clock_out' => [
+                'icon' => 'clock',
+                'icon_bg' => 'bg-orange-100',
+                'icon_color' => 'text-orange-600',
+                'title' => 'Clock Out'
+            ],
+            'start_break' => [
+                'icon' => 'coffee',
+                'icon_bg' => 'bg-yellow-100',
+                'icon_color' => 'text-yellow-600',
+                'title' => 'Break Started'
+            ],
+            'end_break' => [
+                'icon' => 'coffee',
+                'icon_bg' => 'bg-yellow-100',
+                'icon_color' => 'text-yellow-600',
+                'title' => 'Break Ended'
+            ],
+
+            // Schedule Management
+            'schedule_created' => [
+                'icon' => 'calendar-plus',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Schedule Created'
+            ],
+            'schedule_updated' => [
+                'icon' => 'calendar-alt',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Schedule Updated'
+            ],
+            'schedule_cancelled' => [
+                'icon' => 'calendar-times',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Schedule Cancelled'
+            ],
+
+            // Payroll
+            'payroll_generated' => [
+                'icon' => 'file-invoice-dollar',
+                'icon_bg' => 'bg-purple-100',
+                'icon_color' => 'text-purple-600',
+                'title' => 'Payroll Generated'
+            ],
+            'payroll_processed' => [
+                'icon' => 'cogs',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Payroll Processed'
+            ],
+            'payroll_paid' => [
+                'icon' => 'money-bill-wave',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Payroll Paid'
+            ],
+
+            // Invoices
+            'invoice_generated' => [
+                'icon' => 'file-invoice',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Invoice Generated'
+            ],
+            'invoice_sent' => [
+                'icon' => 'paper-plane',
+                'icon_bg' => 'bg-indigo-100',
+                'icon_color' => 'text-indigo-600',
+                'title' => 'Invoice Sent'
+            ],
+            'invoice_paid' => [
+                'icon' => 'check-circle',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Invoice Paid'
+            ],
+
+            // Client Management
+            'client_created' => [
+                'icon' => 'user-plus',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Client Created'
+            ],
+            'client_updated' => [
+                'icon' => 'user-edit',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Client Updated'
+            ],
+            'client_deleted' => [
+                'icon' => 'user-minus',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Client Deleted'
+            ],
+
+            // Staff Management
+            'staff_created' => [
+                'icon' => 'user-plus',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Staff Created'
+            ],
+            'staff_updated' => [
+                'icon' => 'user-edit',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Staff Updated'
+            ],
+            'staff_deleted' => [
+                'icon' => 'user-minus',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Staff Deleted'
+            ],
+
+            // Location Management
+            'location_created' => [
+                'icon' => 'map-marker-alt',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Location Created'
+            ],
+            'location_updated' => [
+                'icon' => 'map-marker-alt',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Location Updated'
+            ],
+            'location_deleted' => [
+                'icon' => 'map-marker-alt',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Location Deleted'
+            ],
+
+            // Holiday Management
+            'holiday_created' => [
+                'icon' => 'gift',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Holiday Created'
+            ],
+            'holiday_updated' => [
+                'icon' => 'gift',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Holiday Updated'
+            ],
+            'holiday_deleted' => [
+                'icon' => 'gift',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Holiday Deleted'
+            ],
+
+            // Reports & Exports
+            'report_generated' => [
+                'icon' => 'chart-bar',
+                'icon_bg' => 'bg-purple-100',
+                'icon_color' => 'text-purple-600',
+                'title' => 'Report Generated'
+            ],
+            'export_completed' => [
+                'icon' => 'file-export',
+                'icon_bg' => 'bg-green-100',
+                'icon_color' => 'text-green-600',
+                'title' => 'Export Completed'
+            ],
+            'import_completed' => [
+                'icon' => 'file-import',
+                'icon_bg' => 'bg-blue-100',
+                'icon_color' => 'text-blue-600',
+                'title' => 'Import Completed'
+            ],
+
+            // System Settings
+            'settings_changed' => [
+                'icon' => 'cog',
+                'icon_bg' => 'bg-gray-100',
+                'icon_color' => 'text-gray-600',
+                'title' => 'Settings Changed'
+            ],
+            'password_changed' => [
+                'icon' => 'key',
+                'icon_bg' => 'bg-yellow-100',
+                'icon_color' => 'text-yellow-600',
+                'title' => 'Password Changed'
+            ],
+            'permission_updated' => [
+                'icon' => 'lock',
+                'icon_bg' => 'bg-red-100',
+                'icon_color' => 'text-red-600',
+                'title' => 'Permissions Updated'
+            ]
+        ];
+
+        // Return icon data or default if type not found
+        return $icons[$activity_type] ?? [
+            'icon' => 'bell',
+            'icon_bg' => 'bg-gray-100',
+            'icon_color' => 'text-gray-600',
+            'title' => 'Activity'
+        ];
+    }
 
     /**
      * Helper function to format time ago
      */
-    private function timeAgo($datetime) {
-        if (!$datetime) return 'Just now';
+    private function timeAgo($datetime)
+    {
+        if (!$datetime)
+            return 'Just now';
 
         // Use PHP's configured timezone for both sides so DST transitions
         // and MySQL/PHP timezone mismatches don't produce negative diffs.
-        $tz   = new DateTimeZone(date_default_timezone_get());
+        $tz = new DateTimeZone(date_default_timezone_get());
         $time = new DateTime($datetime, $tz);
-        $now  = new DateTime('now', $tz);
+        $now = new DateTime('now', $tz);
         $diff = $now->getTimestamp() - $time->getTimestamp();
 
         // Safety: if clocks are skewed or record is from the future, show "Just now"
-        if ($diff < 0) return 'Just now';
+        if ($diff < 0)
+            return 'Just now';
 
         if ($diff < 60) {
             return $diff < 5 ? 'Just now' : $diff . ' sec ago';
@@ -1048,8 +1061,9 @@ class CoreModel
         }
     }
 
-    public function get_all_staffs() {
-       
+    public function get_all_staffs()
+    {
+
         try {
             $query = "
                 SELECT 
@@ -1071,19 +1085,19 @@ class CoreModel
                 FROM staffs
                 ORDER BY firstname ASC
             ";
-            
+
             $result = $this->db->query($query);
             if (!$result) {
                 throw new Exception("Query failed: " . $this->db->error);
             }
-            
+
             $staffs = [];
             while ($row = $result->fetch_assoc()) {
-                
-                $row['id'] = (int)$row['staff_id'];
+
+                $row['id'] = (int) $row['staff_id'];
                 $row['role'] = $row['role'] ?? 'staff';
                 $row['regDate'] = $row['reg_date'];
-                $row['isActive'] = (bool)$row['is_active'];
+                $row['isActive'] = (bool) $row['is_active'];
                 $row['address'] = $row['address'];
                 $row['city'] = $row['city'];
                 $row['province'] = $row['province'];
@@ -1097,11 +1111,11 @@ class CoreModel
                 $row['isAdmin'] = (strtolower($row['role']) === 'admin');
 
                 $staffs[] = $row;
-            
+
             }
-            
+
             $result->free();
-            
+
             return [
                 'success' => true,
                 'staffs' => $staffs,
@@ -1119,7 +1133,8 @@ class CoreModel
         }
     }
 
-    public function get_all_clients() {
+    public function get_all_clients()
+    {
         try {
             $query = "
                 SELECT 
@@ -1143,22 +1158,23 @@ class CoreModel
                     billing_country,
                     billing_email,
                     bill_rate,
+                    bill_rate_rest,
                     latitude,
                     longitude,
                     reg_date
                 FROM clients
                 ORDER BY firstname ASC
             ";
-            
+
             $result = $this->db->query($query);
             if (!$result) {
                 throw new Exception("Query failed: " . $this->db->error);
             }
-            
+
             $clients = [];
             while ($row = $result->fetch_assoc()) {
-                
-                $row['id'] = (int)$row['client_id'];
+
+                $row['id'] = (int) $row['client_id'];
                 $row['firstname'] = $row['firstname'];
                 $row['middlename'] = $row['middlename'];
                 $row['lastname'] = $row['lastname'];
@@ -1177,17 +1193,18 @@ class CoreModel
                 $row['billingPostalCode'] = $row['billing_postal_code'];
                 $row['billingCountry'] = $row['billing_country'];
                 $row['billingEmail'] = $row['billing_email'];
-                $row['billingRate'] = (float)$row['bill_rate'];
+                $row['billingRate'] = (float) $row['bill_rate'];
+                $row['billingRateRest'] = (float) $row['bill_rate_rest'];
                 $row['regDate'] = $row['reg_date'];
-                $row['client_id'] = (int)$row['client_id'];
+                $row['client_id'] = (int) $row['client_id'];
                 $row['latitude'] = $row['latitude'] ?? null;
                 $row['longitude'] = $row['longitude'] ?? null;
 
                 $clients[] = $row;
             }
-            
+
             $result->free();
-            
+
             return [
                 'status' => true,
                 'clients' => $clients,
@@ -1205,7 +1222,8 @@ class CoreModel
         }
     }
 
-    public function add_staff($staffData) {
+    public function add_staff($staffData)
+    {
         date_default_timezone_set('America/Toronto');
         $date = date('Y-m-d H:i:s');
         try {
@@ -1214,41 +1232,41 @@ class CoreModel
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ";
 
-            $isActive      = filter_var($staffData['isActive'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-            $isAdminBool   = filter_var($staffData['isAdmin'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-            $role          = $isAdminBool ? 'admin' : 'staff';
-            
+            $isActive = filter_var($staffData['isActive'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            $isAdminBool = filter_var($staffData['isAdmin'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            $role = $isAdminBool ? 'admin' : 'staff';
+
             $stmt = $this->db->prepare($query);
             $stmt->bind_param(
-                'sssisssssssss', 
-                $staffData['firstname'], 
-                $staffData['middlename'], 
-                $staffData['lastname'], 
+                'sssisssssssss',
+                $staffData['firstname'],
+                $staffData['middlename'],
+                $staffData['lastname'],
                 $isActive,
                 $role,
-                $staffData['email'], 
-                $staffData['phone'], 
-                $staffData['address'], 
-                $staffData['city'], 
-                $staffData['province'], 
-                $staffData['country'], 
+                $staffData['email'],
+                $staffData['phone'],
+                $staffData['address'],
+                $staffData['city'],
+                $staffData['province'],
+                $staffData['country'],
                 $staffData['postalCode'],
                 $date
             );
-            
+
             if ($stmt->execute()) {
                 $newStaffId = $stmt->insert_id;
 
                 // Queue welcome email — runs in background via worker.php
                 $this->queueWelcomeEmail([
                     'firstname' => $staffData['firstname'],
-                    'lastname'  => $staffData['lastname'],
-                    'email'     => $staffData['email'],
+                    'lastname' => $staffData['lastname'],
+                    'email' => $staffData['email'],
                 ]);
 
                 return [
-                    'status'   => true,
-                    'message'  => 'Staff added successfully',
+                    'status' => true,
+                    'message' => 'Staff added successfully',
                     'staff_id' => $newStaffId
                 ];
             } else {
@@ -1264,37 +1282,38 @@ class CoreModel
         }
     }
 
-    public function update_staff($staffData) {
+    public function update_staff($staffData)
+    {
         try {
             $query = "
                 UPDATE staffs 
                 SET firstname = ?, middlename = ?, lastname = ?, email = ?, phone = ?, address = ?, city = ?, province = ?, country = ?, postal_code = ?, is_active = ?, role = ?
                 WHERE staff_id = ?
             ";
-        
-            $isActive      = filter_var($staffData['isActive'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-            $isAdminBool   = filter_var($staffData['isAdmin'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
-            $role          = $isAdminBool ? 'admin' : 'staff';
+
+            $isActive = filter_var($staffData['isActive'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            $isAdminBool = filter_var($staffData['isAdmin'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            $role = $isAdminBool ? 'admin' : 'staff';
             error_log("Mapped isActive: " . $isActive . ", isAdmin: " . $isAdminBool . ", role: " . $role);
 
             $stmt = $this->db->prepare($query);
             $stmt->bind_param(
-                'ssssssssssisi', 
-                $staffData['firstname'], 
-                $staffData['middlename'], 
+                'ssssssssssisi',
+                $staffData['firstname'],
+                $staffData['middlename'],
                 $staffData['lastname'],
-                $staffData['email'], 
-                $staffData['phone'], 
-                $staffData['address'], 
-                $staffData['city'], 
-                $staffData['province'], 
-                $staffData['country'], 
+                $staffData['email'],
+                $staffData['phone'],
+                $staffData['address'],
+                $staffData['city'],
+                $staffData['province'],
+                $staffData['country'],
                 $staffData['postalCode'],
                 $isActive,
                 $role,
                 $staffData['id']
             );
-            
+
             if ($stmt->execute()) {
                 return [
                     'status' => true,
@@ -1313,7 +1332,8 @@ class CoreModel
         }
     }
 
-    public function delete_staff($staff_id) {
+    public function delete_staff($staff_id)
+    {
         try {
             // Check if staff exists
             $staffInfo = $this->getStaffInfo($staff_id);
@@ -1322,7 +1342,7 @@ class CoreModel
                 throw new Exception("Staff not found with ID: " . $staff_id);
             }
 
-            if($staffInfo['is_admin']) {
+            if ($staffInfo['is_admin']) {
                 throw new Exception("Cannot delete admin staff");
             }
 
@@ -1330,7 +1350,7 @@ class CoreModel
             $query = "DELETE FROM staffs WHERE staff_id = ?";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param('i', $staff_id);
-            
+
             if ($stmt->execute()) {
                 return [
                     'status' => true,
@@ -1349,12 +1369,13 @@ class CoreModel
         }
     }
 
-    public function delete_client($client_id) {
+    public function delete_client($client_id)
+    {
         try {
             $query = "DELETE FROM clients WHERE client_id = ?";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param('i', $client_id);
-            
+
             if ($stmt->execute()) {
                 return [
                     'status' => true,
@@ -1373,7 +1394,8 @@ class CoreModel
         }
     }
 
-    public function check_email_exists($email) {
+    public function check_email_exists($email)
+    {
         try {
             $query = "SELECT staff_id FROM staffs WHERE email = ?";
             $stmt = $this->db->prepare($query);
@@ -1387,7 +1409,8 @@ class CoreModel
         }
     }
 
-    public function sidebarCounter($table) {
+    public function sidebarCounter($table)
+    {
         try {
             $query = "SELECT COUNT(*) AS count FROM $table";
             $result = $this->db->query($query);
@@ -1399,44 +1422,45 @@ class CoreModel
         }
     }
 
-    public function update_or_create_client($clientData) {
+    public function update_or_create_client($clientData)
+    {
         date_default_timezone_set('America/Toronto');
         $date = date('Y-m-d H:i:s');
-        error_log("Received client data: " . print_r($clientData, true));
         try {
-            if($clientData['id'] == 0) {
+            if ($clientData['id'] == 0) {
                 $query = "
-                    INSERT INTO clients (firstname, middlename, lastname, mobile, email, residential_name, residential_address, residential_city, residential_province, residential_postal_code, residential_country, billing_name, billing_address, billing_city, billing_province, billing_postal_code, billing_country, billing_email, bill_rate, latitude, longitude, reg_date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO clients (firstname, middlename, lastname, mobile, email, residential_name, residential_address, residential_city, residential_province, residential_postal_code, residential_country, billing_name, billing_address, billing_city, billing_province, billing_postal_code, billing_country, billing_email, bill_rate, bill_rate_rest, latitude, longitude, reg_date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ";
-                
+
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param(
-                    'ssssssssssssssssssddds', 
-                    $clientData['firstname'], 
-                    $clientData['middlename'], 
-                    $clientData['lastname'], 
-                    $clientData['mobile'], 
-                    $clientData['email'], 
-                    $clientData['residentialName'], 
-                    $clientData['residentialAddress'], 
-                    $clientData['residentialCity'], 
-                    $clientData['residentialProvince'], 
-                    $clientData['residentialPostalCode'], 
-                    $clientData['residentialCountry'], 
-                    $clientData['billingName'], 
-                    $clientData['billingAddress'], 
-                    $clientData['billingCity'], 
-                    $clientData['billingProvince'], 
-                    $clientData['billingPostalCode'], 
-                    $clientData['billingCountry'], 
-                    $clientData['billingEmail'], 
+                    'ssssssssssssssssssdddss',
+                    $clientData['firstname'],
+                    $clientData['middlename'],
+                    $clientData['lastname'],
+                    $clientData['mobile'],
+                    $clientData['email'],
+                    $clientData['residentialName'],
+                    $clientData['residentialAddress'],
+                    $clientData['residentialCity'],
+                    $clientData['residentialProvince'],
+                    $clientData['residentialPostalCode'],
+                    $clientData['residentialCountry'],
+                    $clientData['billingName'],
+                    $clientData['billingAddress'],
+                    $clientData['billingCity'],
+                    $clientData['billingProvince'],
+                    $clientData['billingPostalCode'],
+                    $clientData['billingCountry'],
+                    $clientData['billingEmail'],
                     $clientData['billingRate'],
+                    $clientData['billingRateRest'],
                     $clientData['latitude'],
                     $clientData['longitude'],
                     $date
                 );
-                
+
                 if ($stmt->execute()) {
                     return [
                         'status' => true,
@@ -1452,32 +1476,33 @@ class CoreModel
                 //update existing client
                 $query = "
                     UPDATE clients 
-                    SET firstname = ?, middlename = ?, lastname = ?, mobile = ?, email = ?, residential_name = ?, residential_address = ?, residential_city = ?, residential_province = ?, residential_postal_code = ?, residential_country = ?, billing_name = ?, billing_address = ?, billing_city = ?, billing_province = ?, billing_postal_code = ?, billing_country = ?, billing_email = ?, bill_rate = ?, latitude = ?, longitude = ?
+                    SET firstname = ?, middlename = ?, lastname = ?, mobile = ?, email = ?, residential_name = ?, residential_address = ?, residential_city = ?, residential_province = ?, residential_postal_code = ?, residential_country = ?, billing_name = ?, billing_address = ?, billing_city = ?, billing_province = ?, billing_postal_code = ?, billing_country = ?, billing_email = ?, bill_rate = ?, bill_rate_rest = ?, latitude = ?, longitude = ?
                     WHERE client_id = ?
                 ";
-                
+
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param(
-                    'ssssssssssssssssssddds', 
-                    $clientData['firstname'], 
-                    $clientData['middlename'], 
-                    $clientData['lastname'], 
-                    $clientData['mobile'], 
-                    $clientData['email'], 
-                    $clientData['residentialName'], 
-                    $clientData['residentialAddress'], 
-                    $clientData['residentialCity'], 
-                    $clientData['residentialProvince'], 
-                    $clientData['residentialPostalCode'], 
-                    $clientData['residentialCountry'], 
-                    $clientData['billingName'], 
-                    $clientData['billingAddress'], 
-                    $clientData['billingCity'], 
-                    $clientData['billingProvince'], 
+                    'ssssssssssssssssssddddi',
+                    $clientData['firstname'],
+                    $clientData['middlename'],
+                    $clientData['lastname'],
+                    $clientData['mobile'],
+                    $clientData['email'],
+                    $clientData['residentialName'],
+                    $clientData['residentialAddress'],
+                    $clientData['residentialCity'],
+                    $clientData['residentialProvince'],
+                    $clientData['residentialPostalCode'],
+                    $clientData['residentialCountry'],
+                    $clientData['billingName'],
+                    $clientData['billingAddress'],
+                    $clientData['billingCity'],
+                    $clientData['billingProvince'],
                     $clientData['billingPostalCode'],
                     $clientData['billingCountry'],
                     $clientData['billingEmail'],
                     $clientData['billingRate'],
+                    $clientData['billingRateRest'],
                     $clientData['latitude'],
                     $clientData['longitude'],
                     $clientData['id']
@@ -1504,7 +1529,8 @@ class CoreModel
 
     }
 
-    public function getCoordinates($address) {
+    public function getCoordinates($address)
+    {
         $address = urlencode($address);
         //write a get curl request to geocode the address using a free geocoding API like OpenCage or Geoapify
         $url = "https://api.geoapify.com/v1/geocode/search?text={$address}&apiKey=d60bc710cd934b1d9fd833853efb1639";
@@ -1524,15 +1550,16 @@ class CoreModel
         ];
     }
 
-    public function saveHoliday($holidayData) {
-        try{
+    public function saveHoliday($holidayData)
+    {
+        try {
             $holidayId = $holidayData['holiday_id'];
             $holidayName = $holidayData['holiday_name'];
             $fixedMonth = $holidayData['fixed_month'];
             $fixedDay = $holidayData['fixed_day'];
             $premiumPercentage = $holidayData['premium_percentage'];
 
-            if($holidayId > 0){
+            if ($holidayId > 0) {
                 $query = "UPDATE holidays SET holiday_name = ?, fixed_month = ?, fixed_day = ?, premium_percentage = ? WHERE holiday_id = ?";
                 $stmt = $this->db->prepare($query);
                 $stmt->bind_param('siidi', $holidayName, $fixedMonth, $fixedDay, $premiumPercentage, $holidayId);
@@ -1557,7 +1584,8 @@ class CoreModel
         }
     }
 
-    public function get_all_holidays() {
+    public function get_all_holidays()
+    {
         $query = "SELECT * FROM holidays";
         $stmt = $this->db->prepare($query);
         $stmt->execute();
@@ -1565,16 +1593,17 @@ class CoreModel
         $year = date('Y');
         $holidays = [];
         foreach ($result as $row) {
-            $row['holiday_id'] = (int)$row['holiday_id'];
+            $row['holiday_id'] = (int) $row['holiday_id'];
             $row['holiday_name'] = $row['holiday_name'];
             $row['holiday_date'] = date('Y-m-d', strtotime("{$year}-{$row['fixed_month']}-{$row['fixed_day']}"));
-            $row['premium_percentage'] = (float)$row['premium_percentage'];
+            $row['premium_percentage'] = (float) $row['premium_percentage'];
             $holidays[] = $row;
         }
         return $holidays;
     }
 
-    public function delete_holiday($holiday_id) {
+    public function delete_holiday($holiday_id)
+    {
         try {
             $query = "DELETE FROM holidays WHERE holiday_id = ?";
             $stmt = $this->db->prepare($query);
@@ -1594,9 +1623,10 @@ class CoreModel
         }
     }
 
-    public function get_all_schedules($start_date = null, $end_date = null) {
+    public function get_all_schedules($start_date = null, $end_date = null)
+    {
         date_default_timezone_set('America/Toronto');
-        
+
         // Use provided dates or default to today
         if (!$start_date) {
             $start_date = date('Y-m-d');
@@ -1604,7 +1634,7 @@ class CoreModel
         if (!$end_date) {
             $end_date = date('Y-m-d');
         }
-        
+
         try {
             $query = "
                 SELECT 
@@ -1657,23 +1687,23 @@ class CoreModel
                 WHERE DATE(s.schedule_date) BETWEEN ? AND ?
                 ORDER BY s.schedule_date ASC, s.start_time ASC
             ";
-            
+
             // Using prepared statement for security
             $stmt = $this->db->prepare($query);
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $this->db->error);
             }
-            
+
             $stmt->bind_param('ss', $start_date, $end_date);
-            
+
             if (!$stmt->execute()) {
                 throw new Exception("Execute failed: " . $stmt->error);
             }
-            
+
             $result = $stmt->get_result();
-            
+
             $schedules = [];
-            
+
             while ($row = $result->fetch_assoc()) {
                 // Format the response exactly as needed
                 $schedule = [
@@ -1692,16 +1722,16 @@ class CoreModel
                     'pay_per_hour' => floatval($row['pay_per_hour']),
                     'holiday_pay' => floatval($row['holiday_pay'] ?? 0)
                 ];
-                
+
                 // Add clock in/out times if they exist
                 if ($row['clock_in']) {
                     $schedule['clock_in'] = $row['clock_in'];
                 }
-                
+
                 if ($row['clock_out']) {
                     $schedule['clock_out'] = $row['clock_out'];
                 }
-                
+
                 // Add worked duration if status is completed
                 if ($row['status'] == 'completed') {
                     if ($row['worked_duration_formatted']) {
@@ -1715,19 +1745,19 @@ class CoreModel
                         $schedule['worked_minutes'] = 0;
                     }
                 }
-                
+
                 // Calculate final pay if holiday pay exists
                 if ($row['holiday_pay'] > 0) {
                     $schedule['original_pay_per_hour'] = $schedule['pay_per_hour'];
                     $schedule['final_pay_per_hour'] = round($schedule['pay_per_hour'] + ($schedule['pay_per_hour'] * $row['holiday_pay'] / 100), 2);
                     $schedule['holiday_pay_percentage'] = $row['holiday_pay'];
                 }
-                
+
                 $schedules[] = $schedule;
             }
-            
+
             $stmt->close();
-            
+
             return [
                 'status' => true,
                 'data' => $schedules,
@@ -1737,7 +1767,7 @@ class CoreModel
                     'end' => $end_date
                 ]
             ];
-            
+
         } catch (Exception $e) {
             error_log("Error fetching schedule: " . $e->getMessage());
             return [
@@ -1749,12 +1779,13 @@ class CoreModel
         }
     }
 
-    public function delete_schedule($schedule_id) {
+    public function delete_schedule($schedule_id)
+    {
         try {
             $query = "DELETE FROM schedules WHERE schedule_id = ?";
             $stmt = $this->db->prepare($query);
             $stmt->bind_param('i', $schedule_id);
-            
+
             if ($stmt->execute()) {
                 return [
                     'status' => true,
@@ -1773,7 +1804,8 @@ class CoreModel
         }
     }
 
-    public function get_schedule_by_id($schedule_id) {
+    public function get_schedule_by_id($schedule_id)
+    {
         try {
             $query = "SELECT * FROM schedules WHERE schedule_id = ?";
             $stmt = $this->db->prepare($query);
@@ -1795,7 +1827,8 @@ class CoreModel
         }
     }
 
-    public function update_schedule($scheduleData) {
+    public function update_schedule($scheduleData)
+    {
         date_default_timezone_set('America/Toronto');
         $date = date('Y-m-d');
         $schedule_date = $scheduleData['schedule_date'] ?? $date;
@@ -1804,24 +1837,24 @@ class CoreModel
         $scheduleData['clock_in'] = isset($scheduleData['clock_in']) ? $schedule_date . ' ' . $scheduleData['clock_in'] : null;
         $scheduleData['clock_out'] = isset($scheduleData['clock_out']) ? $schedule_date . ' ' . $scheduleData['clock_out'] : null;
         try {
-            
+
             $query = "
                 UPDATE schedules 
                 SET start_time = ?, end_time = ?, clockin_time = ?, clockout_time = ?, status = ?
                 WHERE schedule_id = ?
             ";
-            
+
             $stmt = $this->db->prepare($query);
             $stmt->bind_param(
                 'sssssi',
-                $scheduleData['start_time'], 
+                $scheduleData['start_time'],
                 $scheduleData['end_time'],
                 $scheduleData['clock_in'],
                 $scheduleData['clock_out'],
                 $scheduleData['status'],
                 $scheduleData['id']
             );
-            
+
             if ($stmt->execute()) {
                 return [
                     'status' => true,
@@ -1840,10 +1873,11 @@ class CoreModel
         }
     }
 
-    public function saveSchedule($scheduleData) {
+    public function saveSchedule($scheduleData)
+    {
         try {
             date_default_timezone_set('America/Toronto');
-            
+
             // Validate incoming data
             if (empty($scheduleData['client_id'])) {
                 return [
@@ -1851,14 +1885,14 @@ class CoreModel
                     'message' => 'Client ID is required'
                 ];
             }
-            
+
             if (empty($scheduleData['schedules']) || !is_array($scheduleData['schedules'])) {
                 return [
                     'status' => false,
                     'message' => 'No schedules to save'
                 ];
             }
-            
+
             $clientId = $scheduleData['client_id'];
             $schedules = $scheduleData['schedules'];
             $successCount = 0;
@@ -1872,14 +1906,14 @@ class CoreModel
             $clientRow = $clientStmt->get_result()->fetch_assoc();
             $clientStmt->close();
             $clientName = $clientRow ? $clientRow['client_name'] : 'the client';
-            
+
             // Begin transaction
             $this->db->begin_transaction();
-            
+
             foreach ($schedules as $index => $schedule) {
                 // Validate required fields for each schedule
                 $errors = $this->validateScheduleItem($schedule, $index);
-                
+
                 if (!empty($errors)) {
                     $failedSchedules[] = [
                         'index' => $index,
@@ -1888,35 +1922,35 @@ class CoreModel
                     ];
                     continue;
                 }
-                
+
                 try {
                     // Prepare schedule data
                     $scheduleDate = $schedule['date'];
                     $startTime = $scheduleDate . ' ' . $schedule['start_time'] . ':00';
                     $endTime = $scheduleDate . ' ' . $schedule['end_time'] . ':00';
-                    
+
                     // For overnight shifts that go past midnight
                     if ($schedule['shift_type'] === 'overnight' && strtotime($schedule['end_time']) <= strtotime($schedule['start_time'])) {
                         $endTime = date('Y-m-d H:i:s', strtotime($scheduleDate . ' ' . $schedule['end_time'] . ':00') + 86400);
                     }
-                    
+
                     // Calculate pay rate with holiday premium if applicable
                     $basePayRate = floatval($schedule['pay_rate']);
                     $holidayRate = isset($schedule['holiday_rate']) ? floatval($schedule['holiday_rate']) : 0;
                     $isHoliday = isset($schedule['is_holiday']) ? $schedule['is_holiday'] : false;
-                    
+
                     // Calculate final pay rate (add holiday premium if applicable)
                     $finalPayRate = $basePayRate;
                     if ($isHoliday && $holidayRate > 0) {
                         $finalPayRate = $basePayRate + ($basePayRate * $holidayRate / 100);
                     }
-                    
+
                     $shiftType = $schedule['shift_type'];
                     $overnightType = isset($schedule['overnight_type']) ? $schedule['overnight_type'] : 'none';
                     $status = 'scheduled'; // Default status for new schedules
                     $staffInfo = $this->getStaffInfo($schedule['staff_id']);
                     $staff_email = $staffInfo['email'] ?? null;
-                    
+
                     $query = "
                         INSERT INTO schedules (
                             user_id,
@@ -1934,12 +1968,12 @@ class CoreModel
                             holiday_pay
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
                     ";
-                    
+
                     $stmt = $this->db->prepare($query);
                     if (!$stmt) {
                         throw new Exception("Prepare failed: " . $this->db->error);
                     }
-                    
+
                     $stmt->bind_param(
                         'isisssssdsd',
                         $schedule['staff_id'],
@@ -1954,32 +1988,32 @@ class CoreModel
                         $status,
                         $holidayRate
                     );
-                    
+
                     if ($stmt->execute()) {
                         $scheduleId = $stmt->insert_id;
                         $successCount++;
                         $savedSchedules[] = [
-                            'id'           => $scheduleId,
-                            'staff_id'     => $schedule['staff_id'],
-                            'staff_info'   => $staffInfo,
-                            'client_name'  => $clientName,
-                            'date'         => $scheduleDate,
-                            'start_time'   => $startTime,
-                            'end_time'     => $endTime,
-                            'shift_type'   => $shiftType,
-                            'is_holiday'   => $isHoliday,
+                            'id' => $scheduleId,
+                            'staff_id' => $schedule['staff_id'],
+                            'staff_info' => $staffInfo,
+                            'client_name' => $clientName,
+                            'date' => $scheduleDate,
+                            'start_time' => $startTime,
+                            'end_time' => $endTime,
+                            'shift_type' => $shiftType,
+                            'is_holiday' => $isHoliday,
                             'holiday_name' => isset($schedule['holiday_name']) ? $schedule['holiday_name'] : null,
                             'final_pay_rate' => $finalPayRate
                         ];
-                        
+
                         // Log activity for each created schedule
                         //$this->logScheduleActivity($scheduleId, $schedule['staff_id'], $clientId, $scheduleDate, $isHoliday, $holidayRate);
                     } else {
                         throw new Exception("Execute failed: " . $stmt->error);
                     }
-                    
+
                     $stmt->close();
-                    
+
                 } catch (Exception $e) {
                     $failedSchedules[] = [
                         'index' => $index,
@@ -1988,7 +2022,7 @@ class CoreModel
                     ];
                 }
             }
-            
+
             // Commit or rollback based on success
             if (empty($failedSchedules)) {
                 $this->db->commit();
@@ -2000,7 +2034,7 @@ class CoreModel
                     if (!isset($schedulesByStaff[$sid])) {
                         $schedulesByStaff[$sid] = [
                             'staff_info' => $sched['staff_info'],
-                            'schedules'  => []
+                            'schedules' => []
                         ];
                     }
                     $schedulesByStaff[$sid]['schedules'][] = $sched;
@@ -2019,7 +2053,7 @@ class CoreModel
                 ];
             } else {
                 $this->db->rollback();
-                
+
                 // If all schedules failed
                 if ($successCount === 0) {
                     return [
@@ -2029,7 +2063,7 @@ class CoreModel
                         'failed_count' => count($failedSchedules)
                     ];
                 }
-                
+
                 // Partial success (some schedules were saved)
                 return [
                     'status' => true,
@@ -2041,13 +2075,13 @@ class CoreModel
                     'partial_success' => true
                 ];
             }
-            
+
         } catch (Exception $e) {
             // Rollback transaction on error
             if ($this->db->connect_errno === 0) {
                 $this->db->rollback();
             }
-            
+
             error_log("Error saving schedules: " . $e->getMessage());
             return [
                 'status' => false,
@@ -2057,16 +2091,17 @@ class CoreModel
         }
     }
 
-    private function validateScheduleItem($schedule, $index) {
+    private function validateScheduleItem($schedule, $index)
+    {
         $errors = [];
-        
+
         // Validate staff_id
         if (empty($schedule['staff_id'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Staff member is required";
         } elseif (!is_numeric($schedule['staff_id'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Invalid staff ID";
         }
-        
+
         // Validate date
         if (empty($schedule['date'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Date is required";
@@ -2075,14 +2110,14 @@ class CoreModel
             if (!$date || $date->format('Y-m-d') !== $schedule['date']) {
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid date format";
             }
-            
+
             // Check if date is in the past
             $today = date('Y-m-d');
             if ($schedule['date'] < $today) {
                 $errors[] = "Schedule " . ($index + 1) . ": Date cannot be in the past";
             }
         }
-        
+
         // Validate start_time
         if (empty($schedule['start_time'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Start time is required";
@@ -2092,7 +2127,7 @@ class CoreModel
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid start time format";
             }
         }
-        
+
         // Validate end_time
         if (empty($schedule['end_time'])) {
             $errors[] = "Schedule " . ($index + 1) . ": End time is required";
@@ -2102,29 +2137,29 @@ class CoreModel
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid end time format";
             }
         }
-        
+
         // Validate start_time vs end_time
         if (!empty($schedule['start_time']) && !empty($schedule['end_time'])) {
             $start = strtotime($schedule['start_time']);
             $end = strtotime($schedule['end_time']);
-            
+
             // For overnight shifts, end time can be earlier than start time
             // This is allowed, so we don't need to validate that end > start
-            
+
             $diffHours = ($end < $start) ? ($end + 86400 - $start) / 3600 : ($end - $start) / 3600;
-            
+
             if ($diffHours > 24) {
                 $errors[] = "Schedule " . ($index + 1) . ": Shift duration cannot exceed 24 hours";
             }
         }
-        
+
         // Validate pay_rate
         if (empty($schedule['pay_rate'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Pay rate is required";
         } elseif (!is_numeric($schedule['pay_rate']) || floatval($schedule['pay_rate']) <= 0) {
             $errors[] = "Schedule " . ($index + 1) . ": Pay rate must be a positive number";
         }
-        
+
         // Validate shift_type
         if (empty($schedule['shift_type'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Shift type is required";
@@ -2134,7 +2169,7 @@ class CoreModel
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid shift type";
             }
         }
-        
+
         // Validate overnight_type (optional)
         if (!empty($schedule['overnight_type'])) {
             $validOvernightTypes = ['none', 'awake', 'rest'];
@@ -2142,36 +2177,38 @@ class CoreModel
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid overnight type";
             }
         }
-        
+
         return $errors;
     }
 
-    public function logScheduleActivity($scheduleId, $staffId, $clientId, $scheduleDate, $isHoliday, $holidayRate) {
+    public function logScheduleActivity($scheduleId, $staffId, $clientId, $scheduleDate, $isHoliday, $holidayRate)
+    {
         try {
             // Get staff and client names
             //$staffName = $this->getStaffName($staffId);
             //$clientName = $this->getClientName($clientId);
-            
+
             $activityDescription = "";
-            
+
             if ($isHoliday && $holidayRate > 0) {
                 $activityDescription .= " (Holiday: {$holidayRate}% premium)";
             }
-            
+
             $query = "INSERT INTO recent_activities (activity_type, description, reference_id, created_at) VALUES (?, ?, ?, NOW())";
             $stmt = $this->db->prepare($query);
             $activityType = 'schedule_created';
             $stmt->bind_param('ssi', $activityType, $activityDescription, $scheduleId);
             $stmt->execute();
             $stmt->close();
-            
+
         } catch (Exception $e) {
             // Don't fail if logging fails, just log error
             error_log("Failed to log schedule activity: " . $e->getMessage());
         }
     }
 
-    public function getStaffInfo($staffId) {
+    public function getStaffInfo($staffId)
+    {
         $query = "SELECT * FROM staffs WHERE staff_id = ?";
         $stmt = $this->db->prepare($query);
         $stmt->bind_param('i', $staffId);
@@ -2183,37 +2220,39 @@ class CoreModel
         return $row;
     }
 
-    private function queueScheduleNotificationEmail($staffInfo, array $schedules) {
+    private function queueScheduleNotificationEmail($staffInfo, array $schedules)
+    {
         try {
-            $staffName  = trim(($staffInfo['firstname'] ?? '') . ' ' . ($staffInfo['lastname'] ?? ''));
+            $staffName = trim(($staffInfo['firstname'] ?? '') . ' ' . ($staffInfo['lastname'] ?? ''));
             $staffEmail = $staffInfo['email'] ?? '';
-            if (!$staffEmail) return;
+            if (!$staffEmail)
+                return;
 
             $count = count($schedules);
 
             // Build one row per schedule
             $rows = '';
             foreach ($schedules as $i => $sched) {
-                $bg         = ($i % 2 === 0) ? '#ffffff' : '#f9fafb';
-                $date       = date('D, M j Y', strtotime($sched['date']));
-                $startFmt   = date('g:i A', strtotime($sched['start_time']));
-                $endFmt     = date('g:i A', strtotime($sched['end_time']));
+                $bg = ($i % 2 === 0) ? '#ffffff' : '#f9fafb';
+                $date = date('D, M j Y', strtotime($sched['date']));
+                $startFmt = date('g:i A', strtotime($sched['start_time']));
+                $endFmt = date('g:i A', strtotime($sched['end_time']));
                 $shiftLabel = ucfirst($sched['shift_type']);
                 $clientName = htmlspecialchars($sched['client_name']);
-                $holiday    = ($sched['is_holiday'] && !empty($sched['holiday_name']))
-                            ? ' <span style="background:#fef3c7;color:#92400e;font-size:11px;padding:1px 6px;border-radius:10px;">'
-                              . htmlspecialchars($sched['holiday_name']) . '</span>'
-                            : '';
+                $holiday = ($sched['is_holiday'] && !empty($sched['holiday_name']))
+                    ? ' <span style="background:#fef3c7;color:#92400e;font-size:11px;padding:1px 6px;border-radius:10px;">'
+                    . htmlspecialchars($sched['holiday_name']) . '</span>'
+                    : '';
 
                 $rows .= '<tr style="background:' . $bg . ';">'
-                       . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $clientName . '</td>'
-                       . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $date . $holiday . '</td>'
-                       . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $startFmt . ' &ndash; ' . $endFmt . '</td>'
-                       . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $shiftLabel . '</td>'
-                       . '</tr>';
+                    . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $clientName . '</td>'
+                    . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $date . $holiday . '</td>'
+                    . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $startFmt . ' &ndash; ' . $endFmt . '</td>'
+                    . '<td style="padding:10px 14px;font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;">' . $shiftLabel . '</td>'
+                    . '</tr>';
             }
 
-            $plural  = $count > 1 ? $count . ' new schedules have' : 'A new schedule has';
+            $plural = $count > 1 ? $count . ' new schedules have' : 'A new schedule has';
             $subject = $count > 1
                 ? $count . ' New Schedules Assigned to You'
                 : 'New Schedule Assigned — ' . date('D, M j', strtotime($schedules[0]['date']));
@@ -2271,7 +2310,8 @@ class CoreModel
         }
     }
 
-    private function queueMail($toEmail, $toName, $subject, $body) {
+    private function queueMail($toEmail, $toName, $subject, $body)
+    {
         $stmt = $this->db->prepare(
             "INSERT INTO mail_queue (to_email, to_name, subject, body, status, attempts, created_at)
              VALUES (?, ?, ?, ?, 'pending', 0, NOW())"
@@ -2281,13 +2321,14 @@ class CoreModel
         $stmt->close();
     }
 
-    private function queueWelcomeEmail($staff) {
+    private function queueWelcomeEmail($staff)
+    {
         try {
-            $firstName  = htmlspecialchars($staff['firstname']);
-            $fullName   = htmlspecialchars($staff['firstname'] . ' ' . $staff['lastname']);
-            $email      = $staff['email'];
-            $resetUrl   = $this->getCurrentUrl() . '/forgot_password';
-            $subject    = 'Welcome to TAMEC Care Staffing Services — Set Up Your Password';
+            $firstName = htmlspecialchars($staff['firstname']);
+            $fullName = htmlspecialchars($staff['firstname'] . ' ' . $staff['lastname']);
+            $email = $staff['email'];
+            $resetUrl = $this->getCurrentUrl() . '/forgot_password';
+            $subject = 'Welcome to TAMEC Care Staffing Services — Set Up Your Password';
 
             $body = '<!DOCTYPE html>
 <html lang="en">
@@ -2495,7 +2536,8 @@ class CoreModel
         }
     }
 
-    public function fetch_schedules_for_payroll($start_date, $end_date) {
+    public function fetch_schedules_for_payroll($start_date, $end_date)
+    {
         $query = "
             SELECT
                 sc.schedule_id,
@@ -2548,13 +2590,13 @@ class CoreModel
             $sid = $row['user_id'];
             if (!isset($grouped[$sid])) {
                 $grouped[$sid] = [
-                    'staff_id'    => $sid,
-                    'staff_name'  => $row['staff_name'],
-                    'staff_role'  => $row['staff_role'],
-                    'schedules'   => [],
+                    'staff_id' => $sid,
+                    'staff_name' => $row['staff_name'],
+                    'staff_role' => $row['staff_role'],
+                    'schedules' => [],
                     'total_count' => 0,
-                    'pending_count'  => 0,
-                    'pending_hours'  => 0,
+                    'pending_count' => 0,
+                    'pending_hours' => 0,
                     'pending_amount' => 0,
                 ];
             }
@@ -2562,8 +2604,8 @@ class CoreModel
             $grouped[$sid]['total_count']++;
             if (!$row['payroll_id']) {
                 $grouped[$sid]['pending_count']++;
-                $grouped[$sid]['pending_hours']  = round($grouped[$sid]['pending_hours']  + (float)$row['hours_worked'],  2);
-                $grouped[$sid]['pending_amount'] = round($grouped[$sid]['pending_amount'] + (float)$row['estimated_amount'], 2);
+                $grouped[$sid]['pending_hours'] = round($grouped[$sid]['pending_hours'] + (float) $row['hours_worked'], 2);
+                $grouped[$sid]['pending_amount'] = round($grouped[$sid]['pending_amount'] + (float) $row['estimated_amount'], 2);
             }
         }
         $stmt->close();
@@ -2571,11 +2613,12 @@ class CoreModel
         return ['status' => true, 'groups' => array_values($grouped)];
     }
 
-    public function create_payroll_from_selection($data) {
+    public function create_payroll_from_selection($data)
+    {
         $period_start = $data['period_start'];
-        $period_end   = $data['period_end'];
+        $period_end = $data['period_end'];
         $schedule_ids = $data['schedule_ids'];
-        $notes        = !empty($data['notes']) ? $data['notes'] : null;
+        $notes = !empty($data['notes']) ? $data['notes'] : null;
 
         if (empty($schedule_ids)) {
             return ['status' => false, 'message' => 'No schedules selected'];
@@ -2610,23 +2653,23 @@ class CoreModel
         }
 
         $unique_staff = [];
-        $total_hours  = 0;
+        $total_hours = 0;
         $total_amount = 0;
 
         foreach ($valid_arr as $s) {
             $unique_staff[$s['user_id']] = true;
-            $hours         = max(0, (strtotime($s['end_time']) - strtotime($s['start_time'])) / 3600);
-            $rate          = $s['holiday_pay'] > 0 ? ($s['pay_per_hour'] * $s['holiday_pay'] / 100) : $s['pay_per_hour'];
-            $total_hours  += $hours;
+            $hours = max(0, (strtotime($s['end_time']) - strtotime($s['start_time'])) / 3600);
+            $rate = $s['holiday_pay'] > 0 ? ($s['pay_per_hour'] * $s['holiday_pay'] / 100) : $s['pay_per_hour'];
+            $total_hours += $hours;
             $total_amount += $hours * $rate;
         }
 
-        $total_staff  = count($unique_staff);
-        $total_hours  = round($total_hours,  2);
+        $total_staff = count($unique_staff);
+        $total_hours = round($total_hours, 2);
         $total_amount = round($total_amount, 2);
 
-        $year           = date('Y');
-        $cnt            = $this->db->query("SELECT COUNT(*) AS c FROM payrolls WHERE YEAR(created_at) = $year")->fetch_assoc()['c'] ?? 0;
+        $year = date('Y');
+        $cnt = $this->db->query("SELECT COUNT(*) AS c FROM payrolls WHERE YEAR(created_at) = $year")->fetch_assoc()['c'] ?? 0;
         $payroll_number = 'PR-' . $year . '-' . str_pad($cnt + 1, 3, '0', STR_PAD_LEFT);
 
         $stmt = $this->db->prepare("
@@ -2639,7 +2682,7 @@ class CoreModel
         $stmt->close();
 
         $valid_ids = array_column($valid_arr, 'schedule_id');
-        $ph2   = implode(',', array_fill(0, count($valid_ids), '?'));
+        $ph2 = implode(',', array_fill(0, count($valid_ids), '?'));
         $types2 = 'i' . str_repeat('i', count($valid_ids));
         $params2 = array_merge([$payroll_id], $valid_ids);
         $stmt = $this->db->prepare("UPDATE schedules SET payroll_id = ?, payroll_status = 'processed' WHERE schedule_id IN ($ph2)");
@@ -2650,14 +2693,15 @@ class CoreModel
         $skipped = count($schedule_ids) - count($valid_ids);
 
         return [
-            'status'         => true,
-            'message'        => "Payroll $payroll_number created with $total_staff staff and " . count($valid_ids) . " schedules" . ($skipped > 0 ? " ($skipped already processed skipped)" : ''),
-            'payroll_id'     => $payroll_id,
+            'status' => true,
+            'message' => "Payroll $payroll_number created with $total_staff staff and " . count($valid_ids) . " schedules" . ($skipped > 0 ? " ($skipped already processed skipped)" : ''),
+            'payroll_id' => $payroll_id,
             'payroll_number' => $payroll_number
         ];
     }
 
-    public function get_all_payrolls() {
+    public function get_all_payrolls()
+    {
         $query = "
             SELECT
                 p.*,
@@ -2677,7 +2721,8 @@ class CoreModel
         return ['status' => true, 'payrolls' => $payrolls];
     }
 
-    public function get_payroll_details($payroll_id) {
+    public function get_payroll_details($payroll_id)
+    {
         $stmt = $this->db->prepare("
             SELECT p.*, CONCAT(s.firstname, ' ', s.lastname) AS created_by_name
             FROM payrolls p
@@ -2733,10 +2778,11 @@ class CoreModel
         return ['status' => true, 'payroll' => $payroll, 'schedules' => $schedules];
     }
 
-    public function generate_payroll($data) {
+    public function generate_payroll($data)
+    {
         $period_start = $data['period_start'];
-        $period_end   = $data['period_end'];
-        $notes        = !empty($data['notes']) ? $data['notes'] : null;
+        $period_end = $data['period_end'];
+        $notes = !empty($data['notes']) ? $data['notes'] : null;
 
         $stmt = $this->db->prepare("
             SELECT schedule_id, user_id, start_time, end_time, pay_per_hour, holiday_pay
@@ -2758,23 +2804,23 @@ class CoreModel
             return ['status' => false, 'message' => 'No pending schedules found in the selected period'];
         }
 
-        $total_staff  = count(array_unique(array_column($schedules, 'user_id')));
-        $total_hours  = 0;
+        $total_staff = count(array_unique(array_column($schedules, 'user_id')));
+        $total_hours = 0;
         $total_amount = 0;
 
         foreach ($schedules as $s) {
-            $hours         = max(0, (strtotime($s['end_time']) - strtotime($s['start_time'])) / 3600);
-            $rate          = $s['holiday_pay'] > 0 ? ($s['pay_per_hour'] * $s['holiday_pay'] / 100) : $s['pay_per_hour'];
-            $total_hours  += $hours;
+            $hours = max(0, (strtotime($s['end_time']) - strtotime($s['start_time'])) / 3600);
+            $rate = $s['holiday_pay'] > 0 ? ($s['pay_per_hour'] * $s['holiday_pay'] / 100) : $s['pay_per_hour'];
+            $total_hours += $hours;
             $total_amount += $hours * $rate;
         }
 
-        $total_hours  = round($total_hours, 2);
+        $total_hours = round($total_hours, 2);
         $total_amount = round($total_amount, 2);
 
-        $year         = date('Y');
+        $year = date('Y');
         $count_result = $this->db->query("SELECT COUNT(*) AS cnt FROM payrolls WHERE YEAR(created_at) = $year");
-        $next_num     = ($count_result->fetch_assoc()['cnt'] ?? 0) + 1;
+        $next_num = ($count_result->fetch_assoc()['cnt'] ?? 0) + 1;
         $payroll_number = 'PR-' . $year . '-' . str_pad($next_num, 3, '0', STR_PAD_LEFT);
 
         $stmt = $this->db->prepare("
@@ -2788,22 +2834,23 @@ class CoreModel
 
         $schedule_ids = array_column($schedules, 'schedule_id');
         $placeholders = implode(',', array_fill(0, count($schedule_ids), '?'));
-        $types        = 'i' . str_repeat('i', count($schedule_ids));
-        $params       = array_merge([$payroll_id], $schedule_ids);
+        $types = 'i' . str_repeat('i', count($schedule_ids));
+        $params = array_merge([$payroll_id], $schedule_ids);
         $stmt = $this->db->prepare("UPDATE schedules SET payroll_id = ?, payroll_status = 'processed' WHERE schedule_id IN ($placeholders)");
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $stmt->close();
 
         return [
-            'status'         => true,
-            'message'        => "Payroll $payroll_number generated successfully ($total_staff staff, " . count($schedules) . " schedules)",
-            'payroll_id'     => $payroll_id,
+            'status' => true,
+            'message' => "Payroll $payroll_number generated successfully ($total_staff staff, " . count($schedules) . " schedules)",
+            'payroll_id' => $payroll_id,
             'payroll_number' => $payroll_number
         ];
     }
 
-    public function delete_payroll($payroll_id) {
+    public function delete_payroll($payroll_id)
+    {
         $stmt = $this->db->prepare("UPDATE schedules SET payroll_id = NULL, payroll_status = 'pending' WHERE payroll_id = ?");
         $stmt->bind_param('i', $payroll_id);
         $stmt->execute();
@@ -2824,7 +2871,8 @@ class CoreModel
 
     // ─── Invoice Creation Methods ─────────────────────────────────────────────
 
-    public function fetch_schedules_for_invoice($client_id, $start_date, $end_date) {
+    public function fetch_schedules_for_invoice($client_id, $start_date, $end_date)
+    {
         $query = "
             SELECT
                 sc.schedule_id,
@@ -2840,6 +2888,7 @@ class CoreModel
                 sc.total_break_hours,
                 sc.notes,
                 COALESCE(cl.bill_rate, 0) AS bill_rate,
+                COALESCE(cl.bill_rate_rest, 0) AS bill_rate_rest,
                 CONCAT(st.firstname, ' ', st.lastname) AS staff_name,
                 st.role AS staff_role,
                 CONCAT(cl.firstname, ' ', cl.lastname) AS client_name,
@@ -2849,8 +2898,17 @@ class CoreModel
                 ) AS hours_worked,
                 ROUND(
                     CASE WHEN sc.holiday_pay > 0
-                        THEN (COALESCE(cl.bill_rate, 0) * sc.holiday_pay / 100)
-                        ELSE COALESCE(cl.bill_rate, 0)
+                        THEN (
+                            CASE WHEN sc.overnight_type = 'rest'
+                                THEN COALESCE(cl.bill_rate_rest, cl.bill_rate, 0)
+                                ELSE COALESCE(cl.bill_rate, 0)
+                            END * sc.holiday_pay / 100
+                        )
+                        ELSE
+                            CASE WHEN sc.overnight_type = 'rest'
+                                THEN COALESCE(cl.bill_rate_rest, cl.bill_rate, 0)
+                                ELSE COALESCE(cl.bill_rate, 0)
+                            END
                     END
                     *
                     GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2
@@ -2877,13 +2935,13 @@ class CoreModel
             $sid = $row['user_id'];
             if (!isset($grouped[$sid])) {
                 $grouped[$sid] = [
-                    'staff_id'       => $sid,
-                    'staff_name'     => $row['staff_name'],
-                    'staff_role'     => $row['staff_role'],
-                    'schedules'      => [],
-                    'total_count'    => 0,
-                    'pending_count'  => 0,
-                    'pending_hours'  => 0,
+                    'staff_id' => $sid,
+                    'staff_name' => $row['staff_name'],
+                    'staff_role' => $row['staff_role'],
+                    'schedules' => [],
+                    'total_count' => 0,
+                    'pending_count' => 0,
+                    'pending_hours' => 0,
                     'pending_amount' => 0,
                 ];
             }
@@ -2891,8 +2949,8 @@ class CoreModel
             $grouped[$sid]['total_count']++;
             if (!$row['invoice_id']) {
                 $grouped[$sid]['pending_count']++;
-                $grouped[$sid]['pending_hours']  = round($grouped[$sid]['pending_hours']  + (float)$row['hours_worked'],    2);
-                $grouped[$sid]['pending_amount'] = round($grouped[$sid]['pending_amount'] + (float)$row['estimated_amount'], 2);
+                $grouped[$sid]['pending_hours'] = round($grouped[$sid]['pending_hours'] + (float) $row['hours_worked'], 2);
+                $grouped[$sid]['pending_amount'] = round($grouped[$sid]['pending_amount'] + (float) $row['estimated_amount'], 2);
             }
         }
         $stmt->close();
@@ -2900,19 +2958,20 @@ class CoreModel
         return ['status' => true, 'groups' => array_values($grouped)];
     }
 
-    public function create_invoice_from_selection($data) {
-        $client_id    = (int) $data['client_id'];
+    public function create_invoice_from_selection($data)
+    {
+        $client_id = (int) $data['client_id'];
         $period_start = $data['period_start'];
-        $period_end   = $data['period_end'];
+        $period_end = $data['period_end'];
         $schedule_ids = $data['schedule_ids'];
-        $notes        = !empty($data['notes']) ? $data['notes'] : null;
+        $notes = !empty($data['notes']) ? $data['notes'] : null;
 
         if (empty($schedule_ids)) {
             return ['status' => false, 'message' => 'No schedules selected'];
         }
 
         // Fetch client bill_rate
-        $stmt = $this->db->prepare("SELECT bill_rate FROM clients WHERE client_id = ?");
+        $stmt = $this->db->prepare("SELECT bill_rate, bill_rate_rest FROM clients WHERE client_id = ?");
         $stmt->bind_param('i', $client_id);
         $stmt->execute();
         $client = $stmt->get_result()->fetch_assoc();
@@ -2921,14 +2980,15 @@ class CoreModel
         if (!$client) {
             return ['status' => false, 'message' => 'Client not found'];
         }
-        $bill_rate = (float)($client['bill_rate'] ?? 0);
+        $bill_rate = (float) ($client['bill_rate'] ?? 0);
+        $bill_rate_rest = (float) ($client['bill_rate_rest'] ?? 0);
 
         // Fetch selected schedules
         $placeholders = implode(',', array_fill(0, count($schedule_ids), '?'));
         $types = str_repeat('i', count($schedule_ids));
 
         $stmt = $this->db->prepare("
-            SELECT schedule_id, user_id, start_time, end_time, holiday_pay, invoice_status
+            SELECT schedule_id, user_id, start_time, end_time, holiday_pay, invoice_status, overnight_type
             FROM schedules
             WHERE schedule_id IN ($placeholders) AND client_id = ?
         ");
@@ -2951,49 +3011,60 @@ class CoreModel
         }
 
         $unique_staff = [];
-        $total_hours  = 0;
-        $subtotal     = 0;
+        $total_hours = 0;
+        $subtotal = 0;
 
         foreach ($valid_arr as $s) {
             $unique_staff[$s['user_id']] = true;
-            $hours       = max(0, (strtotime($s['end_time']) - strtotime($s['start_time'])) / 3600);
-            $rate        = $s['holiday_pay'] > 0 ? ($bill_rate * $s['holiday_pay'] / 100) : $bill_rate;
+            $hours = max(0, (strtotime($s['end_time']) - strtotime($s['start_time'])) / 3600);
+            $rate = $s['holiday_pay'] > 0 ? ($s['overnight_type'] === 'rest' ? $bill_rate_rest : $bill_rate) * $s['holiday_pay'] / 100 : ($s['overnight_type'] === 'rest' ? $bill_rate_rest : $bill_rate);
             $total_hours += $hours;
-            $subtotal    += $hours * $rate;
+            $subtotal += $hours * $rate;
         }
 
-        $total_staff  = count($unique_staff);
-        $total_hours  = round($total_hours, 2);
-        $subtotal     = round($subtotal, 2);
-        $tax_rate     = 13.00;
-        $tax_amount   = round($subtotal * $tax_rate / 100, 2);
-        $total_amount = round($subtotal + $tax_amount, 2);
+        $total_staff = count($unique_staff);
+        $total_hours = round($total_hours, 2);
+        $subtotal = ceil($subtotal);
+        $tax_rate = 13.00;
+        $tax_amount = ceil($subtotal * $tax_rate / 100);
+        $total_amount = ceil($subtotal + $tax_amount);
 
-        $year             = date('Y');
-        $cnt              = $this->db->query("SELECT COUNT(*) AS c FROM invoices WHERE YEAR(created_at) = $year")->fetch_assoc()['c'] ?? 0;
-        $invoice_number   = 'INV-' . $year . '-' . str_pad($cnt + 1, 3, '0', STR_PAD_LEFT);
-        $invoice_date     = date('Y-m-d');
-        $due_date         = !empty($data['due_date']) ? $data['due_date'] : date('Y-m-d', strtotime('+30 days'));
+        $year = date('Y');
+        $cnt = $this->db->query("SELECT COUNT(*) AS c FROM invoices WHERE YEAR(created_at) = $year")->fetch_assoc()['c'] ?? 0;
+        $invoice_number = 'INV-' . $year . '-' . str_pad($cnt + 1, 3, '0', STR_PAD_LEFT);
+        $invoice_date = date('Y-m-d');
+        $due_date = !empty($data['due_date']) ? $data['due_date'] : date('Y-m-d', strtotime('+30 days'));
 
         $stmt = $this->db->prepare("
             INSERT INTO invoices
                 (invoice_number, client_id, period_start, period_end, invoice_date, due_date,
                  total_staff, total_hours, subtotal, tax_rate, tax_amount, discount, shipping, total_amount, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'draft', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'generated', ?)
         ");
         $stmt->bind_param(
             'sissssiidddds',
-            $invoice_number, $client_id, $period_start, $period_end, $invoice_date, $due_date,
-            $total_staff, $total_hours, $subtotal, $tax_rate, $tax_amount, $total_amount, $notes
+            $invoice_number,
+            $client_id,
+            $period_start,
+            $period_end,
+            $invoice_date,
+            $due_date,
+            $total_staff,
+            $total_hours,
+            $subtotal,
+            $tax_rate,
+            $tax_amount,
+            $total_amount,
+            $notes
         );
         $stmt->execute();
         $invoice_id = $stmt->insert_id;
         $stmt->close();
 
         $valid_ids = array_column($valid_arr, 'schedule_id');
-        $ph2       = implode(',', array_fill(0, count($valid_ids), '?'));
-        $types2    = 'i' . str_repeat('i', count($valid_ids));
-        $params2   = array_merge([$invoice_id], $valid_ids);
+        $ph2 = implode(',', array_fill(0, count($valid_ids), '?'));
+        $types2 = 'i' . str_repeat('i', count($valid_ids));
+        $params2 = array_merge([$invoice_id], $valid_ids);
 
         $stmt = $this->db->prepare("UPDATE schedules SET invoice_id = ?, invoice_status = 'processed', invoice_processed_at = NOW() WHERE schedule_id IN ($ph2)");
         $stmt->bind_param($types2, ...$params2);
@@ -3003,16 +3074,17 @@ class CoreModel
         $skipped = count($schedule_ids) - count($valid_ids);
 
         return [
-            'status'         => true,
-            'message'        => "Invoice $invoice_number created with $total_staff staff and " . count($valid_ids) . " schedules" . ($skipped > 0 ? " ($skipped already invoiced skipped)" : ''),
-            'invoice_id'     => $invoice_id,
+            'status' => true,
+            'message' => "Invoice $invoice_number created with $total_staff staff and " . count($valid_ids) . " schedules" . ($skipped > 0 ? " ($skipped already invoiced skipped)" : ''),
+            'invoice_id' => $invoice_id,
             'invoice_number' => $invoice_number
         ];
     }
 
     // ─── Invoice Methods ──────────────────────────────────────────────────────
 
-    public function get_all_invoices() {
+    public function get_all_invoices()
+    {
         $sql = "SELECT i.invoice_id, i.invoice_number, i.invoice_date, i.period_start, i.period_end,
                        i.due_date, i.total_staff, i.total_hours, i.subtotal, i.tax_rate, i.tax_amount,
                        i.discount, i.shipping, i.total_amount, i.status, i.po_number, i.notes,
@@ -3035,7 +3107,8 @@ class CoreModel
         return ['status' => true, 'invoices' => $invoices];
     }
 
-    public function get_invoice_details($invoice_id) {
+    public function get_invoice_details($invoice_id)
+    {
         $stmt = $this->db->prepare(
             "SELECT i.*,
                     CONCAT(c.firstname, ' ', c.lastname) AS client_name,
@@ -3057,7 +3130,7 @@ class CoreModel
         }
 
         $stmt2 = $this->db->prepare(
-            "SELECT sc.schedule_id, sc.schedule_date, sc.shift_type, sc.holiday_pay, sc.status,
+            "SELECT sc.schedule_id, sc.schedule_date, sc.shift_type, sc.overnight_type, sc.holiday_pay, sc.status,
                     DATE_FORMAT(sc.start_time,  '%h:%i %p') AS start_time_fmt,
                     DATE_FORMAT(sc.end_time,    '%h:%i %p') AS end_time_fmt,
                     DATE_FORMAT(sc.start_time,  '%l:%i%p')  AS start_short,
@@ -3066,13 +3139,23 @@ class CoreModel
                     CONCAT(st.firstname, ' ', st.lastname)  AS staff_name,
                     CONCAT(st.lastname, ', ', st.firstname) AS staff_name_last,
                     cl.bill_rate,
+                    cl.bill_rate_rest,
                     ROUND(
                         GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2
                     ) AS hours_worked,
                     ROUND(
                         CASE WHEN sc.holiday_pay > 0
-                            THEN (cl.bill_rate * sc.holiday_pay / 100)
-                            ELSE cl.bill_rate
+                            THEN (
+                                CASE WHEN sc.overnight_type = 'rest'
+                                    THEN COALESCE(cl.bill_rate_rest, cl.bill_rate)
+                                    ELSE cl.bill_rate
+                                END * sc.holiday_pay / 100
+                            )
+                            ELSE
+                                CASE WHEN sc.overnight_type = 'rest'
+                                    THEN COALESCE(cl.bill_rate_rest, cl.bill_rate)
+                                    ELSE cl.bill_rate
+                                END
                         END
                         *
                         GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2
@@ -3115,7 +3198,8 @@ class CoreModel
         return ['status' => true, 'invoice' => $invoice, 'schedules' => $schedules, 'outstanding' => $outstanding];
     }
 
-    public function delete_invoice($invoice_id) {
+    public function delete_invoice($invoice_id)
+    {
         $stmt = $this->db->prepare("UPDATE schedules SET invoice_id = NULL, invoice_status = 'pending' WHERE invoice_id = ?");
         $stmt->bind_param('i', $invoice_id);
         $stmt->execute();
@@ -3133,7 +3217,8 @@ class CoreModel
         return ['status' => true, 'message' => 'Invoice deleted and schedules reset to pending'];
     }
 
-    public function update_invoice_status($invoice_id, $new_status) {
+    public function update_invoice_status($invoice_id, $new_status)
+    {
         $allowed = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
         if (!in_array($new_status, $allowed)) {
             return ['status' => false, 'message' => 'Invalid status value'];
@@ -3156,17 +3241,18 @@ class CoreModel
         return ['status' => true, 'message' => 'Status updated to ' . ucfirst($new_status)];
     }
 
-    public function send_invoice_email($invoice_id) {
+    public function send_invoice_email($invoice_id)
+    {
         $data = $this->get_invoice_details($invoice_id);
         if (!$data['status']) {
             return $data;
         }
 
-        $inv  = $data['invoice'];
+        $inv = $data['invoice'];
         $scheds = $data['schedules'];
 
         $recipient_email = $inv['client_email'];
-        $recipient_name  = $inv['client_name'];
+        $recipient_name = $inv['client_name'];
 
         if (empty($recipient_email)) {
             return ['status' => false, 'message' => 'No email address on file for this client'];
@@ -3289,7 +3375,8 @@ class CoreModel
         return ['status' => false, 'message' => 'Failed to send email: ' . ($mail_result['error'] ?? $mail_result['message'])];
     }
 
-    public function update_payroll_status($payroll_id, $new_status) {
+    public function update_payroll_status($payroll_id, $new_status)
+    {
         $allowed = ['draft', 'processed', 'paid', 'cancelled'];
         if (!in_array($new_status, $allowed)) {
             return ['status' => false, 'message' => 'Invalid status value'];
@@ -3310,14 +3397,16 @@ class CoreModel
 
     // ─── Documents ────────────────────────────────────────────────────────────
 
-    public function get_all_documents() {
+    public function get_all_documents()
+    {
         try {
             $result = $this->db->query("SELECT * FROM documents ORDER BY doc_name ASC");
-            if (!$result) throw new Exception($this->db->error);
+            if (!$result)
+                throw new Exception($this->db->error);
             $docs = [];
             while ($row = $result->fetch_assoc()) {
-                $row['doc_id']   = (int)$row['doc_id'];
-                $row['optional'] = (bool)$row['optional'];
+                $row['doc_id'] = (int) $row['doc_id'];
+                $row['optional'] = (bool) $row['optional'];
                 $docs[] = $row;
             }
             $result->free();
@@ -3328,12 +3417,14 @@ class CoreModel
         }
     }
 
-    public function create_document($data) {
+    public function create_document($data)
+    {
         try {
             $stmt = $this->db->prepare("INSERT INTO documents (doc_name, doc_tag, optional) VALUES (?, ?, ?)");
             $optional = $data['optional'] ? 1 : 0;
             $stmt->bind_param('ssi', $data['doc_name'], $data['doc_tag'], $optional);
-            if (!$stmt->execute()) throw new Exception($stmt->error);
+            if (!$stmt->execute())
+                throw new Exception($stmt->error);
             return ['status' => true, 'message' => 'Document created successfully', 'doc_id' => $stmt->insert_id];
         } catch (Exception $e) {
             error_log("create_document error: " . $e->getMessage());
@@ -3341,12 +3432,14 @@ class CoreModel
         }
     }
 
-    public function update_document($data) {
+    public function update_document($data)
+    {
         try {
             $stmt = $this->db->prepare("UPDATE documents SET doc_name = ?, doc_tag = ?, optional = ? WHERE doc_id = ?");
             $optional = $data['optional'] ? 1 : 0;
             $stmt->bind_param('ssii', $data['doc_name'], $data['doc_tag'], $optional, $data['doc_id']);
-            if (!$stmt->execute()) throw new Exception($stmt->error);
+            if (!$stmt->execute())
+                throw new Exception($stmt->error);
             return ['status' => true, 'message' => 'Document updated successfully'];
         } catch (Exception $e) {
             error_log("update_document error: " . $e->getMessage());
@@ -3354,11 +3447,13 @@ class CoreModel
         }
     }
 
-    public function delete_document($doc_id) {
+    public function delete_document($doc_id)
+    {
         try {
             $stmt = $this->db->prepare("DELETE FROM documents WHERE doc_id = ?");
             $stmt->bind_param('i', $doc_id);
-            if (!$stmt->execute()) throw new Exception($stmt->error);
+            if (!$stmt->execute())
+                throw new Exception($stmt->error);
             return ['status' => true, 'message' => 'Document deleted successfully'];
         } catch (Exception $e) {
             error_log("delete_document error: " . $e->getMessage());
@@ -3368,7 +3463,8 @@ class CoreModel
 
     // ─── User Documents ───────────────────────────────────────────────────────
 
-    public function get_user_documents($staff_id) {
+    public function get_user_documents($staff_id)
+    {
         try {
             $stmt = $this->db->prepare("
                 SELECT ud.*, d.doc_name, d.optional
@@ -3381,10 +3477,10 @@ class CoreModel
             $result = $stmt->get_result();
             $docs = [];
             while ($row = $result->fetch_assoc()) {
-                $row['user_doc_id'] = (int)$row['user_doc_id'];
-                $row['staff_id']    = (int)$row['staff_id'];
-                $row['doc_id']      = (int)$row['doc_id'];
-                $row['optional']    = (bool)$row['optional'];
+                $row['user_doc_id'] = (int) $row['user_doc_id'];
+                $row['staff_id'] = (int) $row['staff_id'];
+                $row['doc_id'] = (int) $row['doc_id'];
+                $row['optional'] = (bool) $row['optional'];
                 $docs[] = $row;
             }
             return ['status' => true, 'user_documents' => $docs];
@@ -3394,7 +3490,8 @@ class CoreModel
         }
     }
 
-    public function save_user_document($staff_id, $doc_id, $doc_tag, $file_path, $original_name) {
+    public function save_user_document($staff_id, $doc_id, $doc_tag, $file_path, $original_name)
+    {
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO user_documents (staff_id, doc_id, doc_tag, file_path, original_name)
@@ -3402,7 +3499,8 @@ class CoreModel
                 ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), original_name = VALUES(original_name), updated_at = NOW()
             ");
             $stmt->bind_param('iisss', $staff_id, $doc_id, $doc_tag, $file_path, $original_name);
-            if (!$stmt->execute()) throw new Exception($stmt->error);
+            if (!$stmt->execute())
+                throw new Exception($stmt->error);
             return ['status' => true];
         } catch (Exception $e) {
             error_log("save_user_document error: " . $e->getMessage());
@@ -3413,13 +3511,14 @@ class CoreModel
     /**
      * Log an activity to the recent_activities table
      */
-    public function logActivity($activity_type, $title, $description = null, $target_type = null) {
+    public function logActivity($activity_type, $title, $description = null, $target_type = null)
+    {
         try {
-            $user_id   = (int)($_SESSION['tamec_id']   ?? 0);
+            $user_id = (int) ($_SESSION['tamec_id'] ?? 0);
             $user_name = $_SESSION['tamec_name'] ?? 'System';
             $user_role = $_SESSION['tamec_role'] ?? 'admin';
-            $ip        = $_SERVER['REMOTE_ADDR'] ?? null;
-            $ua        = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
 
             $device_type = 'desktop';
             if ($ua) {
@@ -3430,17 +3529,26 @@ class CoreModel
                 }
             }
 
-            if ($user_id <= 0) return;
+            if ($user_id <= 0)
+                return;
 
             $stmt = $this->db->prepare("
                 INSERT INTO recent_activities
                     (user_id, user_name, user_role, activity_type, activity_title, activity_description, target_type, ip_address, user_agent, device_type)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param('isssssssss',
-                $user_id, $user_name, $user_role,
-                $activity_type, $title, $description,
-                $target_type, $ip, $ua, $device_type
+            $stmt->bind_param(
+                'isssssssss',
+                $user_id,
+                $user_name,
+                $user_role,
+                $activity_type,
+                $title,
+                $description,
+                $target_type,
+                $ip,
+                $ua,
+                $device_type
             );
             $stmt->execute();
             $stmt->close();
@@ -3452,43 +3560,45 @@ class CoreModel
     /**
      * Fetch all activities with optional filters and pagination
      */
-    public function fetch_all_activities_paginated($page = 1, $per_page = 20, $type_filter = null, $date_from = null, $date_to = null, $search = null) {
+    public function fetch_all_activities_paginated($page = 1, $per_page = 20, $type_filter = null, $date_from = null, $date_to = null, $search = null)
+    {
         try {
-            $offset     = ($page - 1) * $per_page;
+            $offset = ($page - 1) * $per_page;
             $conditions = [];
-            $params     = [];
-            $types      = '';
+            $params = [];
+            $types = '';
 
             if ($type_filter) {
                 $conditions[] = 'activity_type = ?';
-                $params[]     = $type_filter;
-                $types       .= 's';
+                $params[] = $type_filter;
+                $types .= 's';
             }
             if ($date_from) {
                 $conditions[] = 'DATE(created_at) >= ?';
-                $params[]     = $date_from;
-                $types       .= 's';
+                $params[] = $date_from;
+                $types .= 's';
             }
             if ($date_to) {
                 $conditions[] = 'DATE(created_at) <= ?';
-                $params[]     = $date_to;
-                $types       .= 's';
+                $params[] = $date_to;
+                $types .= 's';
             }
             if ($search) {
                 $conditions[] = '(activity_title LIKE ? OR activity_description LIKE ? OR user_name LIKE ?)';
-                $like         = '%' . $search . '%';
-                $params[]     = $like;
-                $params[]     = $like;
-                $params[]     = $like;
-                $types       .= 'sss';
+                $like = '%' . $search . '%';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $types .= 'sss';
             }
 
             $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
             $countStmt = $this->db->prepare("SELECT COUNT(*) AS total FROM recent_activities $where");
-            if ($types) $countStmt->bind_param($types, ...$params);
+            if ($types)
+                $countStmt->bind_param($types, ...$params);
             $countStmt->execute();
-            $total = (int)$countStmt->get_result()->fetch_assoc()['total'];
+            $total = (int) $countStmt->get_result()->fetch_assoc()['total'];
             $countStmt->close();
 
             $dataStmt = $this->db->prepare("
@@ -3500,7 +3610,7 @@ class CoreModel
                 LIMIT ? OFFSET ?
             ");
 
-            $dataParams   = $params;
+            $dataParams = $params;
             $dataParams[] = $per_page;
             $dataParams[] = $offset;
             $dataStmt->bind_param($types . 'ii', ...$dataParams);
@@ -3509,23 +3619,23 @@ class CoreModel
 
             $activities = [];
             while ($row = $result->fetch_assoc()) {
-                $iconData                 = $this->getActivityIcon($row['activity_type']);
-                $row['time_ago']          = $this->timeAgo($row['created_at']);
-                $row['icon']              = $iconData['icon'];
-                $row['icon_bg']           = $iconData['icon_bg'];
-                $row['icon_color']        = $iconData['icon_color'];
-                $row['date_formatted']    = date('M j, Y g:i A', strtotime($row['created_at']));
-                $activities[]             = $row;
+                $iconData = $this->getActivityIcon($row['activity_type']);
+                $row['time_ago'] = $this->timeAgo($row['created_at']);
+                $row['icon'] = $iconData['icon'];
+                $row['icon_bg'] = $iconData['icon_bg'];
+                $row['icon_color'] = $iconData['icon_color'];
+                $row['date_formatted'] = date('M j, Y g:i A', strtotime($row['created_at']));
+                $activities[] = $row;
             }
             $dataStmt->close();
 
             return [
-                'success'     => true,
-                'activities'  => $activities,
-                'total'       => $total,
-                'page'        => (int)$page,
-                'per_page'    => (int)$per_page,
-                'total_pages' => (int)ceil($total / max(1, $per_page))
+                'success' => true,
+                'activities' => $activities,
+                'total' => $total,
+                'page' => (int) $page,
+                'per_page' => (int) $per_page,
+                'total_pages' => (int) ceil($total / max(1, $per_page))
             ];
 
         } catch (Exception $e) {

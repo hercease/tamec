@@ -885,7 +885,7 @@
                         <td>${formatDate(s.schedule_date)}<br><span class="text-gray-400 text-xs">${s.start_time_fmt} – ${s.end_time_fmt}</span></td>
                         <td class="capitalize">${s.shift_type}${parseFloat(s.holiday_pay) > 0 ? ' <span style="color:#c2410c;font-size:11px;">(Holiday)</span>' : ''}</td>
                         <td class="text-right">${parseFloat(s.hours_worked || 0).toFixed(2)} hrs</td>
-                        <td class="text-right text-gray-600">$${parseFloat(s.bill_rate || 0).toFixed(2)}</td>
+                        <td class="text-right text-gray-600">$${s.overnight_type === 'rest' ? s.bill_rate_rest : s.bill_rate}</td>
                         <td class="text-right font-semibold text-[#003366]">$${parseFloat(s.amount || 0).toFixed(2)}</td>
                     </tr>`).join('');
 
@@ -1043,7 +1043,8 @@
                 const staffD = escHtml(s.staff_name_last || s.staff_name || '');
                 const desc = fmtSlash(s.schedule_date) + ' (' + dayN + ') @ ' + startT + ' - ' + endT + ' - CG: ' + staffD;
                 const hp = parseFloat(s.holiday_pay || 0);
-                const rate = hp > 0 ? (parseFloat(s.bill_rate || 0) * hp / 100) : parseFloat(s.bill_rate || 0);
+                const effectiveRate = s.overnight_type === 'rest' ? parseFloat(s.bill_rate_rest || s.bill_rate || 0) : parseFloat(s.bill_rate || 0);
+                const rate = hp > 0 ? (effectiveRate * hp / 100) : effectiveRate;
                 const holTag = hp > 0 ? ' <em style="color:#c2410c;font-size:11px;">(Holiday Pay)</em>' : '';
                 return '<tr>'
                     + '<td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;line-height:1.4;">' + desc + holTag + '</td>'
@@ -1336,7 +1337,7 @@
 
             $.ajax({
                 url: 'update_invoice_status', method: 'POST',
-                data: { invoice_id: selectedInvoiceId, new_status: 'paid' }, dataType: 'json',
+                data: { invoice_id: selectedInvoiceId, status: 'paid' }, dataType: 'json',
                 success: function (res) {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-check-circle"></i> Mark as Paid';

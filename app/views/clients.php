@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,25 +12,26 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         body {
             font-family: 'Inter', sans-serif;
         }
-        
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
-        
+
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
-        
+
         ::-webkit-scrollbar-thumb {
             background: #99CC33;
             border-radius: 5px;
         }
-        
+
         /* Status badges */
         .badge {
             padding: 0.25rem 0.75rem;
@@ -39,22 +41,22 @@
             display: inline-flex;
             align-items: center;
         }
-        
+
         .badge-active {
             background-color: #99CC33;
             color: white;
         }
-        
+
         .badge-inactive {
             background-color: #EF4444;
             color: white;
         }
-        
+
         /* Sidebar transitions */
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
-        
+
         /* Mobile menu overlay */
         .overlay {
             position: fixed;
@@ -68,37 +70,37 @@
             visibility: hidden;
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
-        
+
         .overlay.active {
             opacity: 1;
             visibility: visible;
         }
-        
+
         /* Card hover effects */
         .card-hover {
             transition: all 0.2s ease;
         }
-        
+
         .card-hover:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
-        
+
         /* Sidebar */
         .sidebar {
             transform: translateX(-100%);
         }
-        
+
         .sidebar.open {
             transform: translateX(0);
         }
-        
+
         @media (min-width: 1024px) {
             .sidebar {
                 transform: translateX(0);
             }
         }
-        
+
         /* Modal styles */
         .modal {
             display: none;
@@ -112,11 +114,11 @@
             justify-content: center;
             align-items: center;
         }
-        
+
         .modal.active {
             display: flex;
         }
-        
+
         .modal-content {
             background-color: white;
             border-radius: 0.75rem;
@@ -126,31 +128,32 @@
             overflow-y: auto;
             animation: slideIn 0.3s ease;
         }
-        
+
         @keyframes slideIn {
             from {
                 transform: translateY(-50px);
                 opacity: 0;
             }
+
             to {
                 transform: translateY(0);
                 opacity: 1;
             }
         }
-        
+
         /* Form styles */
         .form-section {
             border-bottom: 1px solid #e5e7eb;
             padding-bottom: 1.5rem;
             margin-bottom: 1.5rem;
         }
-        
+
         .form-section:last-child {
             border-bottom: none;
             padding-bottom: 0;
             margin-bottom: 0;
         }
-        
+
         .form-label {
             display: block;
             font-size: 0.875rem;
@@ -158,7 +161,7 @@
             color: #374151;
             margin-bottom: 0.5rem;
         }
-        
+
         .form-input {
             width: 100%;
             padding: 0.625rem 1rem;
@@ -167,13 +170,13 @@
             font-size: 0.875rem;
             transition: all 0.2s;
         }
-        
+
         .form-input:focus {
             outline: none;
             border-color: #99CC33;
             box-shadow: 0 0 0 3px rgba(153, 204, 51, 0.2);
         }
-        
+
         .form-select {
             width: 100%;
             padding: 0.625rem 1rem;
@@ -183,13 +186,13 @@
             background-color: white;
             transition: all 0.2s;
         }
-        
+
         .form-select:focus {
             outline: none;
             border-color: #99CC33;
             box-shadow: 0 0 0 3px rgba(153, 204, 51, 0.2);
         }
-        
+
         /* Toast notification */
         .toast {
             position: fixed;
@@ -204,36 +207,36 @@
             transition: transform 0.3s ease;
             border-left: 4px solid #99CC33;
         }
-        
+
         .toast.show {
             transform: translateX(0);
         }
-        
+
         .toast.success {
             border-left-color: #99CC33;
         }
-        
+
         .toast.error {
             border-left-color: #EF4444;
         }
-        
+
         .toast.warning {
             border-left-color: #F59E0B;
         }
-        
+
         /* Table styles */
         .table-container {
             overflow-x: auto;
             border-radius: 0.75rem;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
         }
-        
+
         .client-table {
             width: 100%;
             background-color: white;
             border-collapse: collapse;
         }
-        
+
         .client-table th {
             background-color: #f9fafb;
             padding: 1rem 1.5rem;
@@ -245,41 +248,41 @@
             color: #6b7280;
             border-bottom: 1px solid #e5e7eb;
         }
-        
+
         .client-table td {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid #e5e7eb;
             color: #374151;
             font-size: 0.875rem;
         }
-        
+
         .client-table tbody tr:hover {
             background-color: #f9fafb;
         }
-        
+
         .action-btn {
             padding: 0.5rem;
             border-radius: 0.375rem;
             transition: all 0.2s;
             cursor: pointer;
         }
-        
+
         .action-btn:hover {
             background-color: #f3f4f6;
         }
-        
+
         .action-btn.edit:hover {
             color: #99CC33;
         }
-        
+
         .action-btn.delete:hover {
             color: #EF4444;
         }
-        
+
         .action-btn.view:hover {
             color: #003366;
         }
-        
+
         /* Filter bar */
         .filter-bar {
             display: flex;
@@ -289,13 +292,13 @@
             justify-content: space-between;
             margin-bottom: 1.5rem;
         }
-        
+
         .search-box {
             flex: 1;
             min-width: 300px;
             position: relative;
         }
-        
+
         .search-box input {
             width: 100%;
             padding: 0.625rem 1rem 0.625rem 2.5rem;
@@ -303,7 +306,7 @@
             border-radius: 0.5rem;
             font-size: 0.875rem;
         }
-        
+
         .search-box i {
             position: absolute;
             left: 1rem;
@@ -311,7 +314,7 @@
             transform: translateY(-50%);
             color: #9ca3af;
         }
-        
+
         .filter-select {
             padding: 0.625rem 2rem 0.625rem 1rem;
             border: 1px solid #d1d5db;
@@ -320,24 +323,26 @@
             background-color: white;
             cursor: pointer;
         }
-        
+
         /* Responsive */
         @media (max-width: 768px) {
             .filter-bar {
                 flex-direction: column;
                 align-items: stretch;
             }
-            
+
             .search-box {
                 min-width: 100%;
             }
-            
-            .client-table th, .client-table td {
+
+            .client-table th,
+            .client-table td {
                 padding: 0.75rem 1rem;
             }
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
     <!-- Mobile Menu Overlay -->
     <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
@@ -367,7 +372,8 @@
                     <!-- Right: user -->
                     <?php $navName = htmlspecialchars($_SESSION['tamec_name'] ?? 'Admin'); ?>
                     <div class="flex items-center space-x-2 pl-3 border-l border-gray-100">
-                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($navName); ?>&background=003366&color=fff&size=32" class="w-8 h-8 rounded-full">
+                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($navName); ?>&background=003366&color=fff&size=32"
+                            class="w-8 h-8 rounded-full">
                         <div class="hidden sm:block">
                             <p class="text-xs font-semibold text-gray-800 leading-tight"><?php echo $navName; ?></p>
                             <p class="text-xs text-[#99CC33] leading-tight">Administrator</p>
@@ -383,9 +389,11 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                 <div>
                     <h1 class="text-2xl sm:text-3xl font-bold text-black">Clients</h1>
-                    <p class="text-gray-600 mt-1 text-sm sm:text-base">Manage all your client information and assignments</p>
+                    <p class="text-gray-600 mt-1 text-sm sm:text-base">Manage all your client information and
+                        assignments</p>
                 </div>
-                <button onclick="openAddClientModal()" class="mt-4 sm:mt-0 px-4 py-2 bg-[#99CC33] text-white text-sm rounded-lg hover:bg-[#88BB22] transition flex items-center">
+                <button onclick="openAddClientModal()"
+                    class="mt-4 sm:mt-0 px-4 py-2 bg-[#99CC33] text-white text-sm rounded-lg hover:bg-[#88BB22] transition flex items-center">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Add New Client
                 </button>
@@ -395,7 +403,8 @@
             <div class="filter-bar">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search clients by name, email, phone..." onkeyup="searchClients()">
+                    <input type="text" id="searchInput" placeholder="Search clients by name, email, phone..."
+                        onkeyup="searchClients()">
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <select id="provinceFilter" class="filter-select" onchange="filterClients()">
@@ -413,7 +422,8 @@
                         <option value="Northwest Territories">Northwest Territories</option>
                         <option value="Yukon">Yukon</option>
                         <option value="Nunavut">Nunavut</option>
-                        <option value="Greenland">Greenland</select>
+                        <option value="Greenland">Greenland
+                    </select>
                     </select>
                 </div>
             </div>
@@ -442,20 +452,25 @@
                     Showing 1 to 10 of 10 clients
                 </div>
                 <div class="flex space-x-2">
-                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50" id="prevPage" onclick="changePage(-1)" disabled>
+                    <button
+                        class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+                        id="prevPage" onclick="changePage(-1)" disabled>
                         Previous
                     </button>
                     <button class="px-3 py-1 bg-[#99CC33] text-white rounded-lg text-sm" id="page1">1</button>
-                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" id="page2" onclick="changePage(2)">2</button>
-                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" id="page3" onclick="changePage(3)">3</button>
-                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" id="nextPage" onclick="changePage(1)">
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" id="page2"
+                        onclick="changePage(2)">2</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" id="page3"
+                        onclick="changePage(3)">3</button>
+                    <button class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50" id="nextPage"
+                        onclick="changePage(1)">
                         Next
                     </button>
                 </div>
             </div>
 
             <!-- Footer -->
-            <?php include 'includes/footer.php'; ?> 
+            <?php include 'includes/footer.php'; ?>
         </main>
     </div>
 
@@ -474,7 +489,7 @@
                 <!-- Client Form -->
                 <form id="clientForm" onsubmit="saveClient(event)">
                     <input type="hidden" id="clientId" value="">
-                    
+
                     <!-- Personal Information -->
                     <div class="form-section">
                         <h4 class="text-lg font-semibold text-[#003366] mb-4">Personal Information</h4>
@@ -492,7 +507,7 @@
                                 <input type="text" id="lastname" class="form-input" required>
                             </div>
                         </div>
-                        
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
                                 <label class="form-label">Mobile <span class="text-red-500">*</span></label>
@@ -503,7 +518,7 @@
                                 <input type="email" id="email" class="form-input" required>
                             </div>
                         </div>
-                        
+
                     </div>
 
                     <!-- Residential Address -->
@@ -512,7 +527,8 @@
                         <div class="grid grid-cols-1 gap-4">
                             <div>
                                 <label class="form-label">Residence/Facility Name</label>
-                                <input type="text" id="residentialName" class="form-input" placeholder="e.g., Thompson Residence">
+                                <input type="text" id="residentialName" class="form-input"
+                                    placeholder="e.g., Thompson Residence">
                             </div>
                             <div>
                                 <label class="form-label">Street Address <span class="text-red-500">*</span></label>
@@ -555,11 +571,12 @@
                         <div class="flex items-center justify-between mb-4">
                             <h4 class="text-lg font-semibold text-[#003366]">Billing Address</h4>
                             <label class="flex items-center">
-                                <input type="checkbox" id="sameAsResidential" onclick="copyResidentialToBilling()" class="rounded border-gray-300 text-[#99CC33] focus:ring-[#99CC33]">
+                                <input type="checkbox" id="sameAsResidential" onclick="copyResidentialToBilling()"
+                                    class="rounded border-gray-300 text-[#99CC33] focus:ring-[#99CC33]">
                                 <span class="ml-2 text-sm text-gray-600">Same as residential address</span>
                             </label>
                         </div>
-                        
+
                         <div class="grid grid-cols-1 gap-4">
                             <div>
                                 <label class="form-label">Billing Name <span class="text-red-500">*</span></label>
@@ -605,11 +622,23 @@
                         </div>
                     </div>
                     <div class="form-section">
-                        <h4 class="text-lg font-semibold text-[#003366] mb-4">Billing Rate</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="form-label">Hourly Rate ($) <span class="text-red-500">*</span></label>
-                                <input type="number" id="billingRate" class="form-input" min="0" step="0.01" placeholder="0.00" required>
+                                <h4 class="text-lg font-semibold text-[#003366] mb-4">Billing Rate</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="form-label">Hourly Rate ($) <span
+                                                class="text-red-500">*</span></label>
+                                        <input type="number" id="billingRate" class="form-input" min="0" step="0.01"
+                                            placeholder="0.00" required>
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Hourly Rate ($) (Rest)<span
+                                                class="text-red-500">*</span></label>
+                                        <input type="number" id="billingRateRest" class="form-input" min="0" step="0.01"
+                                            placeholder="0.00" required>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -620,25 +649,30 @@
                         <div class="coordinates-group">
                             <div class="form-group">
                                 <label class="form-label">Latitude <span class="text-red-500">*</span></label>
-                                <input type="number" id="latitude" class="form-input" step="0.00000001" placeholder="43.6532" required>
+                                <input type="number" id="latitude" class="form-input" step="0.00000001"
+                                    placeholder="43.6532" required>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label class="form-label">Longitude <span class="text-red-500">*</span></label>
-                                <input type="number" id="longitude" class="form-input" step="0.00000001" placeholder="-79.3832" required>
+                                <input type="number" id="longitude" class="form-input" step="0.00000001"
+                                    placeholder="-79.3832" required>
                             </div>
                         </div>
-                        <button type="button" onclick="getCoordinates()" class="mt-2 text-sm text-[#003366] hover:text-[#99CC33]">
+                        <button type="button" onclick="getCoordinates()"
+                            class="mt-2 text-sm text-[#003366] hover:text-[#99CC33]">
                             <i class="fas fa-map-pin mr-1"></i>Get coordinates from address
                         </button>
                     </div>
 
                     <!-- Form Actions -->
                     <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                        <button type="button" onclick="closeModal()"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
                             Cancel
                         </button>
-                        <button type="submit" class="px-4 py-2 bg-[#99CC33] text-white rounded-lg text-sm hover:bg-[#88BB22] transition">
+                        <button type="submit"
+                            class="px-4 py-2 bg-[#99CC33] text-white rounded-lg text-sm hover:bg-[#88BB22] transition">
                             Save Client
                         </button>
                     </div>
@@ -656,12 +690,15 @@
                         <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
                     </div>
                     <h3 class="text-xl font-bold text-black mb-2">Delete Client</h3>
-                    <p class="text-gray-600 mb-6">Are you sure you want to delete this client? This action cannot be undone.</p>
+                    <p class="text-gray-600 mb-6">Are you sure you want to delete this client? This action cannot be
+                        undone.</p>
                     <div class="flex justify-center space-x-3">
-                        <button onclick="closeDeleteModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
+                        <button onclick="closeDeleteModal()"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition">
                             Cancel
                         </button>
-                        <button onclick="confirmDelete()" class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition">
+                        <button onclick="confirmDelete()"
+                            class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition">
                             Delete Client
                         </button>
                     </div>
@@ -688,7 +725,8 @@
                 </div>
 
                 <div class="flex justify-end mt-6">
-                    <button onclick="closeViewModal()" class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition">
+                    <button onclick="closeViewModal()"
+                        class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition">
                         Close
                     </button>
                 </div>
@@ -717,12 +755,12 @@
                 url: 'fetch_all_clients', // Replace with your actual API endpoint
                 method: 'POST',
                 dataType: 'json',
-                success: function(data) {
+                success: function (data) {
                     clients = data.clients;
                     filteredClients = [...clients];
                     renderClientTable();
                 },
-                error: function() {
+                error: function () {
                     console.error('Failed to fetch client data');
                 }
             });
@@ -734,7 +772,7 @@
         let searchTerm = '';
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             fetch_all_clients();
         });
 
@@ -820,9 +858,9 @@
                     document.getElementById('longitude').value = '';
                     showToast('Error', 'An error occurred while fetching coordinates. Please try again later.', 'error');
                 });
-                // Simulate filling coordinates
-                // document.getElementById('latitude').value = '43.6532';
-                // document.getElementById('longitude').value = '-79.3832';
+            // Simulate filling coordinates
+            // document.getElementById('latitude').value = '43.6532';
+            // document.getElementById('longitude').value = '-79.3832';
         }
 
         // Search function
@@ -839,13 +877,13 @@
         // Combined filter function
         function applyFilters() {
             const provinceFilter = document.getElementById('provinceFilter').value;
-            
+
             // Start with ALL clients
             let tempClients = [...clients];
-            
+
             // Apply search filter if there's a search term
             if (searchTerm) {
-                tempClients = tempClients.filter(client => 
+                tempClients = tempClients.filter(client =>
                     (client.firstname && client.firstname.toLowerCase().includes(searchTerm)) ||
                     (client.lastname && client.lastname.toLowerCase().includes(searchTerm)) ||
                     (client.email && client.email.toLowerCase().includes(searchTerm)) ||
@@ -853,14 +891,14 @@
                     (client.residentialCity && client.residentialCity.toLowerCase().includes(searchTerm))
                 );
             }
-            
+
             // Apply province filter if not 'all'
             if (provinceFilter !== 'all') {
-                tempClients = tempClients.filter(client => 
+                tempClients = tempClients.filter(client =>
                     client.residentialProvince === provinceFilter
                 );
             }
-            
+
             // Update filtered clients
             filteredClients = tempClients;
             currentPage = 1;
@@ -869,12 +907,12 @@
         // Update pagination
         function updatePagination() {
             const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-            document.getElementById('paginationInfo').textContent = 
+            document.getElementById('paginationInfo').textContent =
                 `Showing ${Math.min(1, filteredClients.length)} to ${Math.min(itemsPerPage, filteredClients.length)} of ${filteredClients.length} clients`;
-            
+
             document.getElementById('prevPage').disabled = currentPage === 1;
             document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
-            
+
             // Update page buttons
             for (let i = 1; i <= 3; i++) {
                 const btn = document.getElementById(`page${i}`);
@@ -941,7 +979,7 @@
         // Save client
         function saveClient(event) {
             event.preventDefault();
-            
+
             const clientId = document.getElementById('clientId').value;
             const clientData = {
                 id: clientId ? parseInt(clientId) : 0,
@@ -964,6 +1002,7 @@
                 billingCountry: document.getElementById('billingCountry').value,
                 billingEmail: document.getElementById('billingEmail').value,
                 billingRate: document.getElementById('billingRate').value,
+                billingRateRest: document.getElementById('billingRateRest').value,
                 latitude: document.getElementById('latitude').value,
                 longitude: document.getElementById('longitude').value,
                 regDate: clientId ? clients.find(c => c.id === parseInt(clientId)).regDate : new Date().toISOString().slice(0, 19).replace('T', ' ')
@@ -971,7 +1010,7 @@
 
             if (clientId) {
                 // Update existing client
-               
+
 
                 fetch('create_or_update_client', {
                     method: 'POST',
@@ -981,7 +1020,7 @@
                     body: new URLSearchParams(clientData).toString()
                 }).then(response => response.json()).then(data => {
 
-                    if(data.status){
+                    if (data.status) {
                         const index = clients.findIndex(c => c.id === parseInt(clientId));
                         clients[index] = clientData;
                         filteredClients = [...clients];
@@ -1015,7 +1054,7 @@
 
                 }).then(data => {
 
-                    if(data.status){
+                    if (data.status) {
                         clients.push(clientData);
                         filteredClients = [...clients];
                         renderClientTable();
@@ -1031,7 +1070,7 @@
                 });
             }
 
-            
+
         }
 
         // Edit client
@@ -1059,9 +1098,10 @@
                 document.getElementById('billingCountry').value = client.billingCountry;
                 document.getElementById('billingEmail').value = client.billingEmail || '';
                 document.getElementById('billingRate').value = client.billingRate || 0;
+                document.getElementById('billingRateRest').value = client.billingRateRest || 0;
                 document.getElementById('latitude').value = client.latitude || '';
                 document.getElementById('longitude').value = client.longitude || '';
-                
+
                 document.getElementById('clientModal').classList.add('active');
             }
         }
@@ -1071,7 +1111,7 @@
             const client = clients.find(c => c.id === id);
             if (client) {
                 document.getElementById('viewModalTitle').textContent = `Client Details - ${client.firstname} ${client.lastname}`;
-                
+
                 const detailsHtml = `
                     <div class="gap-4">
                         <div class="col-span-2 bg-gray-50 p-4 rounded-lg">
@@ -1172,7 +1212,7 @@
                         </div>
                     </div>
                 `;
-                
+
                 document.getElementById('clientDetails').innerHTML = detailsHtml;
                 document.getElementById('viewModal').classList.add('active');
             }
@@ -1191,7 +1231,7 @@
                 method: 'POST',
                 data: { client_id: selectedClientId },
                 dataType: 'json',
-                success: function(data) {
+                success: function (data) {
                     if (data.status) {
                         clients = clients.filter(c => c.id !== selectedClientId);
                         filteredClients = [...clients];
@@ -1202,7 +1242,7 @@
                         throw new Error(data.message || 'Failed to delete client');
                     }
                 },
-                error: function() {
+                error: function () {
                     console.error('Failed to delete client');
                     showToast('Error', 'Failed to delete client', 'error');
                 }
@@ -1215,18 +1255,18 @@
             const icon = document.getElementById('toastIcon');
             const toastTitle = document.getElementById('toastTitle');
             const toastMessage = document.getElementById('toastMessage');
-            
+
             toastTitle.textContent = title;
             toastMessage.textContent = message;
-            
+
             if (type === 'success') {
                 icon.className = 'fas fa-check-circle text-[#99CC33] mr-3 text-xl';
             } else if (type === 'error') {
                 icon.className = 'fas fa-exclamation-circle text-red-500 mr-3 text-xl';
             }
-            
+
             toast.classList.add('show');
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
@@ -1244,7 +1284,7 @@
         }
 
         // Handle window resize
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (window.innerWidth >= 1024) { // lg breakpoint
                 sidebar.classList.remove('open');
                 overlay.classList.remove('active');
@@ -1253,11 +1293,12 @@
         });
 
         // Close sidebar when pressing Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && sidebar.classList.contains('open')) {
                 closeSidebar();
             }
         });
     </script>
 </body>
+
 </html>
