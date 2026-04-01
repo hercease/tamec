@@ -944,4 +944,27 @@ class CoreController
             echo json_encode(['status' => false, 'message' => $e->getMessage()]);
         }
     }
+
+    // ─── Mail Queue Worker ────────────────────────────────────────────────────
+
+    public function process_mail_queue()
+    {
+        header('Content-Type: application/json');
+
+        $secret = $_GET['key'] ?? '';
+        $expected = $_ENV['CRON_SECRET'] ?? '';
+
+        if (empty($expected) || $secret !== $expected) {
+            http_response_code(403);
+            echo json_encode(['status' => false, 'message' => 'Forbidden']);
+            return;
+        }
+
+        try {
+            $result = $this->coreModel->processMailQueue();
+            echo json_encode($result);
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }

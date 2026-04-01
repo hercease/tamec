@@ -32,7 +32,7 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 
 // Auth check — public routes bypass session verification
-$publicRoutes = ['/login', '/forgot_password', '/404', '/loginauth', '/logout', '/forgot_password_action'];
+$publicRoutes = ['/login', '/forgot_password', '/404', '/loginauth', '/logout', '/forgot_password_action', '/process_mail_queue'];
 if (!in_array($url, $publicRoutes)) {
     $isAdmin = isset($_SESSION['tamec_session'])
             && isset($_SESSION['tamec_role'])
@@ -71,6 +71,7 @@ $routes = [
         '/create_invoice'  => fn() => $viewController->showCreateInvoicePage($rootUrl),
         '/change_password' => fn() => $viewController->showChangePasswordPage($rootUrl),
         '/activities'      => fn() => $viewController->showActivitiesPage($rootUrl),
+        '/process_mail_queue' => fn() => $coreController->process_mail_queue(),
         '/logout'          => function() use ($baseDir) {
             session_destroy();
             header('Location: login');

@@ -33,6 +33,68 @@ class CoreModel
         return $data;
     }
 
+    public function processMailQueue($batchSize = 10, $maxAttempts = 3) {
+        $sent = 0;
+        $failed = 0;
+
+        $stmt = $this->db->prepare(
+            "SELECT id, to_email, to_name, subject, body
+             FROM mail_queue
+             WHERE status = 'pending' AND attempts < ?
+             ORDER BY created_at ASC
+             LIMIT ?"
+        );
+        $stmt->bind_param('ii', $maxAttempts, $batchSize);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        if (empty($rows)) {
+            return ['status' => true, 'message' => 'No pending emails', 'sent' => 0, 'failed' => 0];
+        }
+
+        foreach ($rows as $row) {
+            // Increment attempts first to prevent double-sends
+            $upd = $this->db->prepare("UPDATE mail_queue SET attempts = attempts + 1 WHERE id = ?");
+            $upd->bind_param('i', $row['id']);
+            $upd->execute();
+            $upd->close();
+
+            $result = $this->sendmail($row['to_email'], $row['to_name'], $row['body'], $row['subject']);
+
+            if ($result['status']) {
+                $done = $this->db->prepare("UPDATE mail_queue SET status = 'sent', sent_at = NOW() WHERE id = ?");
+                $done->bind_param('i', $row['id']);
+                $done->execute();
+                $done->close();
+                $sent++;
+            } else {
+                // Check if max attempts reached
+                $check = $this->db->prepare("SELECT attempts FROM mail_queue WHERE id = ?");
+                $check->bind_param('i', $row['id']);
+                $check->execute();
+                $cur = $check->get_result()->fetch_assoc();
+                $check->close();
+
+                $newStatus = ($cur['attempts'] >= $maxAttempts) ? 'failed' : 'pending';
+                $errMsg = $result['error'] ?? 'Unknown error';
+
+                $fail = $this->db->prepare("UPDATE mail_queue SET status = ?, error_message = ? WHERE id = ?");
+                $fail->bind_param('ssi', $newStatus, $errMsg, $row['id']);
+                $fail->execute();
+                $fail->close();
+                $failed++;
+            }
+        }
+
+        return [
+            'status'  => true,
+            'message' => "Processed: {$sent} sent, {$failed} failed",
+            'sent'    => $sent,
+            'failed'  => $failed
+        ];
+    }
+
     public function sendmail($email, $name, $body, $subject)
     {
         require_once 'PHPMailer/src/Exception.php';
