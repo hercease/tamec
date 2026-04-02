@@ -2185,7 +2185,7 @@ class CoreModel
         if (empty($schedule['start_time'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Start time is required";
         } else {
-            $time = DateTime::createFromFormat('H:i:s', $schedule['start_time']);
+            $time = DateTime::createFromFormat('H:i', $schedule['start_time']);
             if (!$time) {
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid start time format";
             }
@@ -2195,7 +2195,7 @@ class CoreModel
         if (empty($schedule['end_time'])) {
             $errors[] = "Schedule " . ($index + 1) . ": End time is required";
         } else {
-            $time = DateTime::createFromFormat('H:i:s', $schedule['end_time']);
+            $time = DateTime::createFromFormat('H:i', $schedule['end_time']);
             if (!$time) {
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid end time format";
             }

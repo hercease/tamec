@@ -1599,8 +1599,8 @@
                 schedules: [{
                     staff_id:       schedule.user_id,
                     date:           newDate,
-                    start_time:     schedule.start_time,
-                    end_time:       schedule.end_time,
+                    start_time:     schedule.start_time.slice(0, 5),
+                    end_time:       schedule.end_time.slice(0, 5),
                     pay_rate:       schedule.pay_per_hour,
                     shift_type:     schedule.shift_type,
                     overnight_type: schedule.overnight_type || 'none',
