@@ -2174,17 +2174,18 @@ class CoreModel
             }
 
             // Check if date is in the past
-            $today = date('Y-m-d');
+            /* $today = date('Y-m-d');
             if ($schedule['date'] < $today) {
                 $errors[] = "Schedule " . ($index + 1) . ": Date cannot be in the past";
-            }
+            } 
+            */
         }
 
         // Validate start_time
         if (empty($schedule['start_time'])) {
             $errors[] = "Schedule " . ($index + 1) . ": Start time is required";
         } else {
-            $time = DateTime::createFromFormat('H:i', $schedule['start_time']);
+            $time = DateTime::createFromFormat('H:i:s', $schedule['start_time']);
             if (!$time) {
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid start time format";
             }
@@ -2194,7 +2195,7 @@ class CoreModel
         if (empty($schedule['end_time'])) {
             $errors[] = "Schedule " . ($index + 1) . ": End time is required";
         } else {
-            $time = DateTime::createFromFormat('H:i', $schedule['end_time']);
+            $time = DateTime::createFromFormat('H:i:s', $schedule['end_time']);
             if (!$time) {
                 $errors[] = "Schedule " . ($index + 1) . ": Invalid end time format";
             }
@@ -3089,7 +3090,8 @@ class CoreModel
         $subtotal = ceil($subtotal);
         $tax_rate = 13.00;
         $tax_amount = ceil($subtotal * $tax_rate / 100);
-        $total_amount = ceil($subtotal + $tax_amount);
+        $expense = !empty($data['expense']) ? round(floatval($data['expense']), 2) : 0;
+        $total_amount = ceil($subtotal + $tax_amount + $expense);
 
         $year = date('Y');
         $cnt = $this->db->query("SELECT COUNT(*) AS c FROM invoices WHERE YEAR(created_at) = $year")->fetch_assoc()['c'] ?? 0;
@@ -3100,11 +3102,11 @@ class CoreModel
         $stmt = $this->db->prepare("
             INSERT INTO invoices
                 (invoice_number, client_id, period_start, period_end, invoice_date, due_date,
-                 total_staff, total_hours, subtotal, tax_rate, tax_amount, discount, shipping, total_amount, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'generated', ?)
+                 total_staff, total_hours, subtotal, tax_rate, tax_amount, discount, expense, total_amount, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'generated', ?)
         ");
         $stmt->bind_param(
-            'sissssiidddds',
+            'sissssiiddddds',
             $invoice_number,
             $client_id,
             $period_start,
@@ -3116,6 +3118,7 @@ class CoreModel
             $subtotal,
             $tax_rate,
             $tax_amount,
+            $expense,
             $total_amount,
             $notes
         );
@@ -3145,11 +3148,35 @@ class CoreModel
 
     // ─── Invoice Methods ──────────────────────────────────────────────────────
 
+    private function calculateOverdueCharge($invoice) {
+        if (in_array($invoice['status'], ['paid', 'cancelled'])) {
+            return ['overdue_rate' => 0, 'overdue_charge' => 0];
+        }
+
+        $tz   = new DateTimeZone('America/Toronto');
+        $inv  = new DateTime($invoice['invoice_date'], $tz);
+        $now  = new DateTime('now', $tz);
+        $days = (int) $now->diff($inv)->days;
+
+        $rate = 0;
+        if ($days >= 41) {
+            $rate = 10;
+        } elseif ($days >= 36) {
+            $rate = 5;
+        } elseif ($days >= 31) {
+            $rate = 2;
+        }
+
+        $charge = $rate > 0 ? round($invoice['total_amount'] * $rate / 100, 2) : 0;
+
+        return ['overdue_rate' => $rate, 'overdue_charge' => $charge];
+    }
+
     public function get_all_invoices()
     {
         $sql = "SELECT i.invoice_id, i.invoice_number, i.invoice_date, i.period_start, i.period_end,
                        i.due_date, i.total_staff, i.total_hours, i.subtotal, i.tax_rate, i.tax_amount,
-                       i.discount, i.shipping, i.total_amount, i.status, i.po_number, i.notes,
+                       i.discount, i.total_amount, i.status, i.po_number, i.notes,
                        i.sent_at, i.paid_at, i.created_at,
                        CONCAT(c.firstname, ' ', c.lastname) AS client_name,
                        COALESCE(c.billing_email, c.email) AS client_email
@@ -3164,6 +3191,9 @@ class CoreModel
 
         $invoices = [];
         while ($row = $result->fetch_assoc()) {
+            $overdue = $this->calculateOverdueCharge($row);
+            $row['overdue_rate']   = $overdue['overdue_rate'];
+            $row['overdue_charge'] = $overdue['overdue_charge'];
             $invoices[] = $row;
         }
         return ['status' => true, 'invoices' => $invoices];
@@ -3256,6 +3286,11 @@ class CoreModel
             }
             $stmt3->close();
         }
+
+        // Calculate overdue charge
+        $overdue = $this->calculateOverdueCharge($invoice);
+        $invoice['overdue_rate']   = $overdue['overdue_rate'];
+        $invoice['overdue_charge'] = $overdue['overdue_charge'];
 
         return ['status' => true, 'invoice' => $invoice, 'schedules' => $schedules, 'outstanding' => $outstanding];
     }

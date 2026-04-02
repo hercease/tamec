@@ -181,6 +181,11 @@
             color: #374151;
         }
 
+        .sched-table th.text-right,
+        .sched-table td.text-right {
+            text-align: right;
+        }
+
         .sched-table tbody tr:last-child td {
             border-bottom: none;
         }
@@ -938,9 +943,19 @@
                             <span class="text-gray-500">Shipping</span>
                             <span class="font-medium">$${parseFloat(inv.shipping).toFixed(2)}</span>
                         </div>` : ''}
+                        ${parseFloat(inv.expense || 0) > 0 ? `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Expense</span>
+                            <span class="font-medium">$${parseFloat(inv.expense).toFixed(2)}</span>
+                        </div>` : ''}
+                        ${parseFloat(inv.overdue_charge || 0) > 0 ? `
+                        <div class="flex justify-between text-sm">
+                            <span class="text-red-600 font-medium">Overdue Charge (${inv.overdue_rate}%)</span>
+                            <span class="font-medium text-red-600">$${parseFloat(inv.overdue_charge).toFixed(2)}</span>
+                        </div>` : ''}
                         <div class="flex justify-between border-t pt-2 mt-1">
                             <span class="font-bold text-[#003366]">Total</span>
-                            <span class="font-bold text-[#003366] text-base">$${parseFloat(inv.total_amount || 0).toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
+                            <span class="font-bold text-[#003366] text-base">$${(parseFloat(inv.total_amount || 0) + parseFloat(inv.overdue_charge || 0)).toLocaleString('en-CA', { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </div>
@@ -1056,11 +1071,15 @@
                     + '</tr>';
             }).join('');
 
-            const subtotal = parseFloat(inv.subtotal || 0);
-            const gst = parseFloat(inv.tax_amount || 0);
-            const total = parseFloat(inv.total_amount || 0);
+            const subtotal       = parseFloat(inv.subtotal || 0);
+            const gst            = parseFloat(inv.tax_amount || 0);
+            const expense        = parseFloat(inv.expense || 0);
+            const total          = parseFloat(inv.total_amount || 0);
+            const overdueRate    = parseFloat(inv.overdue_rate || 0);
+            const overdueCharge  = parseFloat(inv.overdue_charge || 0);
+            const totalWithOvd   = total + overdueCharge;
             const outstandingSum = outstanding.reduce(function (sum, o) { return sum + parseFloat(o.total_amount || 0); }, 0);
-            const payThisAmount = total + outstandingSum;
+            const payThisAmount  = totalWithOvd + outstandingSum;
 
             const outstandingRows = outstanding.map(function (o) {
                 return '<tr>'
@@ -1181,12 +1200,18 @@
                 + '<tr class="nt"><td>Non-Taxable Subtotal</td><td>$0.00</td></tr>'
                 + '<tr><td>Taxable Subtotal</td><td>' + fmtAmt(subtotal) + '</td></tr>'
                 + '<tr><td>GST</td><td>' + fmtAmt(gst) + '</td></tr>'
-                + '<tr class="ttl"><td>Total</td><td>' + fmtAmt(total) + '</td></tr>'
+                + (expense > 0
+                    ? '<tr><td>Expense</td><td>' + fmtAmt(expense) + '</td></tr>'
+                    : '')
+                + (overdueCharge > 0
+                    ? '<tr><td style="color:#dc2626;">Overdue Charge (' + overdueRate + '%)</td><td style="color:#dc2626;">' + fmtAmt(overdueCharge) + '</td></tr>'
+                    : '')
+                + '<tr class="ttl"><td>Total</td><td>' + fmtAmt(totalWithOvd) + '</td></tr>'
                 + '</table></div>'
                 + outstandingSection
                 + '<div class="pay-wrap"><div class="pay-box">'
                 + '<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:13px;">'
-                + '<span>Amount due on this invoice:</span><span>' + fmtAmt(total) + '</span>'
+                + '<span>Amount due on this invoice:</span><span>' + fmtAmt(totalWithOvd) + '</span>'
                 + '</div>'
                 + otherRow
                 + '<div class="pay-amt"><span>PAY THIS AMOUNT:</span><span>' + fmtAmt(payThisAmount) + '</span></div>'

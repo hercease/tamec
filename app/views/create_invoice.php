@@ -531,6 +531,9 @@
                                         class="text-gray-400 font-normal">(optional)</span></label>
                                 <textarea id="invoiceNotes" class="form-textarea"
                                     placeholder="e.g. March billing cycle..."></textarea>
+                                <label class="block text-sm font-medium text-gray-700 mb-1.5 mt-3">Expense <span
+                                        class="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="number" id="invoiceExpense" class="form-input" min="0" step="0.01" placeholder="0.00">
                             </div>
 
                             <button onclick="submitInvoice()" id="createBtn"
@@ -585,7 +588,9 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
             <input type="date" id="mobileDueDate" class="form-input mb-3">
             <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea id="mobileNotes" class="form-textarea mb-4" placeholder="Optional notes..."></textarea>
+            <textarea id="mobileNotes" class="form-textarea mb-3" placeholder="Optional notes..."></textarea>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Expense</label>
+            <input type="number" id="mobileExpense" class="form-input mb-4" min="0" step="0.01" placeholder="0.00">
             <button onclick="submitInvoice(true)"
                 class="w-full py-3 bg-[#99CC33] text-white rounded-lg font-semibold hover:bg-[#88BB22] transition">
                 <i class="fas fa-plus-circle mr-2"></i>Create Invoice
@@ -637,6 +642,10 @@
                 <div class="flex justify-between">
                     <span class="text-gray-500">GST (13%)</span>
                     <span class="font-semibold" id="confirmGst">$0.00</span>
+                </div>
+                <div class="flex justify-between" id="confirmExpenseRow" style="display:none;">
+                    <span class="text-gray-500">Expense</span>
+                    <span class="font-semibold" id="confirmExpense">$0.00</span>
                 </div>
                 <div class="flex justify-between border-t pt-2">
                     <span class="font-bold text-gray-800">Total</span>
@@ -1062,7 +1071,21 @@
             document.getElementById('confirmHours').textContent = document.getElementById('sumHours').textContent + ' hrs';
             document.getElementById('confirmSubtotal').textContent = document.getElementById('sumSubtotal').textContent;
             document.getElementById('confirmGst').textContent = document.getElementById('sumGst').textContent;
-            document.getElementById('confirmTotal').textContent = document.getElementById('sumTotal').textContent;
+
+            const expense = parseFloat((fromMobile
+                ? document.getElementById('mobileExpense').value
+                : document.getElementById('invoiceExpense').value) || 0);
+
+            if (expense > 0) {
+                document.getElementById('confirmExpense').textContent = '$' + expense.toFixed(2);
+                document.getElementById('confirmExpenseRow').style.display = 'flex';
+            } else {
+                document.getElementById('confirmExpenseRow').style.display = 'none';
+            }
+
+            const sumTotalVal = parseFloat(document.getElementById('sumTotal').textContent.replace(/[^0-9.-]/g, '') || 0);
+            const finalTotal = sumTotalVal + expense;
+            document.getElementById('confirmTotal').textContent = '$' + finalTotal.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             document.getElementById('confirmModal').classList.remove('hidden');
         }
@@ -1081,6 +1104,9 @@
             const due_date = fromMobile
                 ? document.getElementById('mobileDueDate').value
                 : document.getElementById('invoiceDueDate').value;
+            const expense = parseFloat((fromMobile
+                ? document.getElementById('mobileExpense').value
+                : document.getElementById('invoiceExpense').value) || 0);
 
             const btn = fromMobile
                 ? document.querySelector('#mobileModal button[onclick]')
@@ -1097,7 +1123,8 @@
                     period_end: document.getElementById('endDate').value,
                     schedule_ids: Array.from(selectedIds),
                     due_date: due_date,
-                    notes: notes
+                    notes: notes,
+                    expense: expense
                 }),
                 dataType: 'json',
                 success: function (res) {

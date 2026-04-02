@@ -1034,6 +1034,36 @@
                     class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
                     Close
                 </button>
+                <button onclick="openCopyModal()"
+                    class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition flex items-center justify-center gap-2">
+                    <i class="fas fa-copy"></i> Copy Schedule
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copy Schedule Modal -->
+    <div id="copyScheduleModal" class="modal">
+        <div class="modal-content sm" style="max-width:420px;">
+            <div class="p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-black">Copy Schedule</h3>
+                    <button onclick="closeCopyModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <div id="copySummary" class="bg-gray-50 rounded-lg p-3 mb-4 text-sm space-y-1"></div>
+
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Select New Date</label>
+                <input type="date" id="copyDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366] outline-none mb-4">
+
+                <div class="flex justify-end gap-3">
+                    <button onclick="closeCopyModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                    <button onclick="confirmCopySchedule()" id="copyConfirmBtn" class="px-4 py-2 bg-[#99CC33] text-white rounded-lg text-sm hover:bg-[#88bb22] transition flex items-center gap-2">
+                        <i class="fas fa-check"></i> Create Copy
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1522,7 +1552,86 @@
 
         function closeScheduleModal() {
             document.getElementById('scheduleModal').classList.remove('active');
-            selectedScheduleId = null;
+            // selectedScheduleId = null;
+        }
+
+        // ─── Copy Schedule ───────────────────────────────────────────────────────
+        function openCopyModal() {
+            const schedule = schedules.find(s => s.id === selectedScheduleId);
+            if (!schedule) return;
+
+            closeScheduleModal();
+
+            document.getElementById('copySummary').innerHTML = `
+                <div class="flex justify-between"><span class="text-gray-500">Staff</span><span class="font-medium">${escapeHtml(schedule.staff_name)}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Client</span><span class="font-medium">${escapeHtml(schedule.client_name)}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Time</span><span class="font-medium">${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Shift</span><span class="font-medium capitalize">${schedule.shift_type}${schedule.overnight_type !== 'none' ? ' (' + schedule.overnight_type + ')' : ''}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Pay Rate</span><span class="font-medium">$${parseFloat(schedule.pay_per_hour).toFixed(2)}/hr</span></div>
+            `;
+
+            document.getElementById('copyDate').value = '';
+            document.getElementById('copyScheduleModal').classList.add('active');
+        }
+
+        function closeCopyModal() {
+            document.getElementById('copyScheduleModal').classList.remove('active');
+        }
+
+        function confirmCopySchedule() {
+            const schedule = schedules.find(s => s.id === selectedScheduleId);
+            if (!schedule) return;
+
+            const newDate = document.getElementById('copyDate').value;
+            if (!newDate) {
+                showToast('Please select a date.', 'error');
+                return;
+            }
+
+            console.log('schedule', schedule);
+
+            const btn = document.getElementById('copyConfirmBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating…';
+
+            const payload = {
+                client_id: schedule.client_id,
+                schedules: [{
+                    staff_id:       schedule.user_id,
+                    date:           newDate,
+                    start_time:     schedule.start_time,
+                    end_time:       schedule.end_time,
+                    pay_rate:       schedule.pay_per_hour,
+                    shift_type:     schedule.shift_type,
+                    overnight_type: schedule.overnight_type || 'none',
+                    is_holiday:     false,
+                    holiday_rate:   0
+                }]
+            };
+
+            $.ajax({
+                url: 'save_schedules',
+                method: 'POST',
+                data: JSON.stringify(payload),
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function(res) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Create Copy';
+                    if (res.status) {
+                        closeCopyModal();
+                        showToast('Schedule copied successfully.', 'success');
+                        fetchSchedules();
+                    } else {
+                        showToast(res.message || 'Failed to copy schedule.', 'error');
+                    }
+                },
+                error: function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Create Copy';
+                    showToast('Error', 'Connection error. Please try again.', 'error');
+                }
+            });
         }
 
         // Open Edit Modal
