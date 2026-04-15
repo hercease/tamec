@@ -103,6 +103,14 @@
                     </a>
                 </li>
 
+                <!-- Schedule Report -->
+                <li>
+                    <a href="schedule_report" class="flex items-center px-4 py-3 rounded-lg transition <?php echo getActiveClass('schedule_report', $current_page); ?>">
+                        <i class="fas fa-chart-line w-6"></i>
+                        <span class="ml-3">Schedule Report</span>
+                    </a>
+                </li>
+
                 <!-- Divider -->
                 <li class="my-4 border-t border-[#669933] border-opacity-30"></li>
 

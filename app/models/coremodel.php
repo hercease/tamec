@@ -37,17 +37,16 @@ class CoreModel
         $sent = 0;
         $failed = 0;
 
-        $stmt = $this->db->prepare(
-            "SELECT id, to_email, to_name, subject, body
-             FROM mail_queue
-             WHERE status = 'pending' AND attempts < ?
-             ORDER BY created_at ASC
-             LIMIT ?"
-        );
-        $stmt->bind_param('ii', $maxAttempts, $batchSize);
-        $stmt->execute();
-        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
+        $maxAttempts = (int) $maxAttempts;
+        $batchSize   = (int) $batchSize;
+
+        $sql = "SELECT id, to_email, to_name, subject, body
+                FROM mail_queue
+                WHERE status = 'pending' AND attempts < $maxAttempts
+                ORDER BY created_at ASC
+                LIMIT $batchSize";
+        $result = $this->db->query($sql);
+        $rows   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
         if (empty($rows)) {
             return ['status' => true, 'message' => 'No pending emails', 'sent' => 0, 'failed' => 0];
@@ -2599,6 +2598,91 @@ class CoreModel
         }
     }
 
+    public function fetch_schedules_report($filters)
+    {
+        $conditions = [];
+        $params     = [];
+        $types      = '';
+
+        if (!empty($filters['staff_id'])) {
+            $conditions[] = 'sc.user_id = ?';
+            $params[]     = (int) $filters['staff_id'];
+            $types       .= 'i';
+        }
+
+        if (!empty($filters['client_id'])) {
+            $conditions[] = 'sc.client_id = ?';
+            $params[]     = (int) $filters['client_id'];
+            $types       .= 'i';
+        }
+
+        if (!empty($filters['start_date'])) {
+            $conditions[] = 'sc.schedule_date >= ?';
+            $params[]     = $filters['start_date'];
+            $types       .= 's';
+        }
+
+        if (!empty($filters['end_date'])) {
+            $conditions[] = 'sc.schedule_date <= ?';
+            $params[]     = $filters['end_date'];
+            $types       .= 's';
+        }
+
+        if (!empty($filters['status'])) {
+            $conditions[] = 'sc.status = ?';
+            $params[]     = $filters['status'];
+            $types       .= 's';
+        }
+
+        $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+        $sql = "
+            SELECT
+                sc.schedule_id,
+                sc.schedule_date,
+                DATE_FORMAT(sc.start_time, '%h:%i %p') AS start_time_fmt,
+                DATE_FORMAT(sc.end_time,   '%h:%i %p') AS end_time_fmt,
+                sc.shift_type,
+                sc.overnight_type,
+                sc.pay_per_hour,
+                sc.holiday_pay,
+                sc.status,
+                sc.notes,
+                CONCAT(st.firstname, ' ', st.lastname) AS staff_name,
+                CONCAT(cl.firstname, ' ', cl.lastname) AS client_name,
+                CONCAT_WS(', ', cl.residential_city, cl.residential_province) AS client_location,
+                ROUND(GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2) AS hours_worked,
+                ROUND(
+                    CASE WHEN sc.holiday_pay > 0
+                        THEN (sc.pay_per_hour * sc.holiday_pay / 100)
+                        ELSE sc.pay_per_hour
+                    END
+                    *
+                    GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2
+                ) AS amount
+            FROM schedules sc
+            JOIN staffs st ON sc.user_id = st.staff_id
+            JOIN clients cl ON sc.client_id = cl.client_id
+            $where
+            ORDER BY sc.schedule_date ASC, sc.start_time ASC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $schedules = [];
+        while ($row = $result->fetch_assoc()) {
+            $schedules[] = $row;
+        }
+        $stmt->close();
+
+        return ['status' => true, 'schedules' => $schedules];
+    }
+
     public function fetch_schedules_for_payroll($start_date, $end_date)
     {
         $query = "
@@ -3603,6 +3687,120 @@ class CoreModel
             error_log("save_user_document error: " . $e->getMessage());
             return ['status' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    // ─── Staff Agreements (Digital Signing) ──────────────────────────────────
+
+    public function create_agreement($staff_id, $file_path, $original_filename)
+    {
+        try {
+            $token      = bin2hex(random_bytes(32));
+            $created_by = (int) ($_SESSION['tamec_id'] ?? 0);
+
+            $stmt = $this->db->prepare(
+                "INSERT INTO staff_agreements (staff_id, template_file, original_filename, token, status, created_by)
+                 VALUES (?, ?, ?, ?, 'pending', ?)"
+            );
+            $stmt->bind_param('isssi', $staff_id, $file_path, $original_filename, $token, $created_by);
+            if (!$stmt->execute()) {
+                throw new Exception($stmt->error);
+            }
+            $agreement_id = $stmt->insert_id;
+            $stmt->close();
+
+            return ['status' => true, 'agreement_id' => $agreement_id, 'token' => $token];
+        } catch (Exception $e) {
+            error_log("create_agreement error: " . $e->getMessage());
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function get_agreement_by_token($token)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT a.*, CONCAT(s.firstname, ' ', s.lastname) AS staff_name, s.email AS staff_email
+             FROM staff_agreements a
+             LEFT JOIN staffs s ON a.staff_id = s.staff_id
+             WHERE a.token = ?"
+        );
+        $stmt->bind_param('s', $token);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
+    public function get_agreement_by_id($agreement_id)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT a.*, CONCAT(s.firstname, ' ', s.lastname) AS staff_name, s.email AS staff_email
+             FROM staff_agreements a
+             LEFT JOIN staffs s ON a.staff_id = s.staff_id
+             WHERE a.agreement_id = ?"
+        );
+        $stmt->bind_param('i', $agreement_id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $row ?: null;
+    }
+
+    public function mark_agreement_viewed($agreement_id)
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE staff_agreements
+             SET status = 'viewed', viewed_at = NOW()
+             WHERE agreement_id = ? AND status = 'pending'"
+        );
+        $stmt->bind_param('i', $agreement_id);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    public function save_signed_agreement($agreement_id, $signer_name, $signature_data, $ip, $user_agent)
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE staff_agreements
+                 SET status = 'signed', signer_name = ?, signature_data = ?, signer_ip = ?, signer_user_agent = ?, signed_at = NOW()
+                 WHERE agreement_id = ? AND status <> 'signed'"
+            );
+            $stmt->bind_param('ssssi', $signer_name, $signature_data, $ip, $user_agent, $agreement_id);
+            if (!$stmt->execute()) {
+                throw new Exception($stmt->error);
+            }
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+
+            if ($affected === 0) {
+                return ['status' => false, 'message' => 'Agreement already signed or not found'];
+            }
+            return ['status' => true];
+        } catch (Exception $e) {
+            error_log("save_signed_agreement error: " . $e->getMessage());
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function get_agreements_for_staff($staff_id)
+    {
+        $stmt = $this->db->prepare(
+            "SELECT agreement_id, original_filename, token, status, signer_name,
+                    sent_at, viewed_at, signed_at
+             FROM staff_agreements
+             WHERE staff_id = ?
+             ORDER BY sent_at DESC"
+        );
+        $stmt->bind_param('i', $staff_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $agreements = [];
+        while ($row = $result->fetch_assoc()) {
+            $agreements[] = $row;
+        }
+        $stmt->close();
+
+        return ['status' => true, 'agreements' => $agreements];
     }
 
     /**

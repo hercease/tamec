@@ -32,7 +32,7 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 
 // Auth check — public routes bypass session verification
-$publicRoutes = ['/login', '/forgot_password', '/404', '/loginauth', '/logout', '/forgot_password_action', '/process_mail_queue'];
+$publicRoutes = ['/login', '/forgot_password', '/404', '/loginauth', '/logout', '/forgot_password_action', '/process_mail_queue', '/sign_agreement', '/submit_signature'];
 if (!in_array($url, $publicRoutes)) {
     $isAdmin = isset($_SESSION['tamec_session'])
             && isset($_SESSION['tamec_role'])
@@ -71,6 +71,8 @@ $routes = [
         '/create_invoice'  => fn() => $viewController->showCreateInvoicePage($rootUrl),
         '/change_password' => fn() => $viewController->showChangePasswordPage($rootUrl),
         '/activities'      => fn() => $viewController->showActivitiesPage($rootUrl),
+        '/schedule_report' => fn() => $viewController->showScheduleReportPage($rootUrl),
+        '/sign_agreement'  => fn() => $viewController->showSignAgreementPage($rootUrl),
         '/process_mail_queue' => fn() => $coreController->process_mail_queue(),
         '/logout'          => function() use ($baseDir) {
             session_destroy();
@@ -118,6 +120,11 @@ $routes = [
         '/fetch_user_documents'         => fn() => $coreController->fetch_user_documents(),
         '/save_user_document'           => fn() => $coreController->save_user_document(),
         '/fetch_all_activities'         => fn() => $coreController->fetch_all_activities(),
+        '/fetch_schedules_report'       => fn() => $coreController->fetch_schedules_report(),
+        '/send_agreement'               => fn() => $coreController->send_agreement(),
+        '/submit_signature'             => fn() => $coreController->submit_signature(),
+        '/fetch_staff_agreements'       => fn() => $coreController->fetch_staff_agreements(),
+        '/view_signed_agreement'        => fn() => $coreController->view_signed_agreement(),
         '/delete_schedule'              => fn() => $coreController->delete_schedule(),
     ]
 ];

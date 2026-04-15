@@ -196,4 +196,41 @@ class ViewController
         include 'app/views/activities.php';
     }
 
+    public function showSignAgreementPage($rootUrl)
+    {
+        $token = $_GET['token'] ?? '';
+        $agreement = null;
+        $error = null;
+
+        if (!$token) {
+            $error = 'Invalid or missing signing link.';
+        } else {
+            $agreement = $this->coreModel->get_agreement_by_token($token);
+            if (!$agreement) {
+                $error = 'This signing link is invalid or has expired.';
+            } elseif ($agreement['status'] === 'signed') {
+                $error = 'This agreement has already been signed.';
+            } else {
+                // Mark as viewed (only flips pending → viewed)
+                $this->coreModel->mark_agreement_viewed((int)$agreement['agreement_id']);
+            }
+        }
+
+        include 'app/views/sign_agreement.php';
+    }
+
+    public function showScheduleReportPage($rootUrl)
+    {
+        $counters = [
+            'total_staffs'    => $this->coreModel->sidebarCounter('staffs'),
+            'total_clients'   => $this->coreModel->sidebarCounter('clients'),
+            'total_schedules' => $this->coreModel->sidebarCounter('schedules'),
+            'total_payrolls'  => $this->coreModel->sidebarCounter('payrolls'),
+            'total_invoices'  => $this->coreModel->sidebarCounter('invoices'),
+            'all_clients'     => $this->coreModel->get_all_clients(),
+            'all_staffs'      => $this->coreModel->get_all_staffs(),
+        ];
+        include 'app/views/schedule_report.php';
+    }
+
 }

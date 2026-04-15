@@ -295,6 +295,25 @@ class CoreController
         }
     }
 
+    public function fetch_schedules_report()
+    {
+        try {
+            $filters = [
+                'staff_id'   => $_POST['staff_id']   ?? null,
+                'client_id'  => $_POST['client_id']  ?? null,
+                'start_date' => $_POST['start_date'] ?? null,
+                'end_date'   => $_POST['end_date']   ?? null,
+                'status'     => $_POST['status']     ?? null,
+            ];
+            foreach ($filters as $k => $v) {
+                if ($v !== null) $filters[$k] = $this->coreModel->sanitizeInput($v);
+            }
+            echo json_encode($this->coreModel->fetch_schedules_report($filters));
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
     public function saveSchedule()
     {
         try {
@@ -965,6 +984,191 @@ class CoreController
             echo json_encode($result);
         } catch (Exception $e) {
             echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // ─── Staff Agreements (Digital Signing) ──────────────────────────────────
+
+    public function send_agreement()
+    {
+        header('Content-Type: application/json');
+        try {
+            $staff_id = (int) ($_POST['staff_id'] ?? 0);
+            if (!$staff_id) throw new Exception("Staff ID is required");
+            if (empty($_FILES['agreement']['name'])) throw new Exception("No file uploaded");
+
+            $file = $_FILES['agreement'];
+            $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($ext !== 'pdf') throw new Exception("Only PDF files are allowed");
+            if ($file['size'] > 10 * 1024 * 1024) throw new Exception("File size must not exceed 10MB");
+
+            // Fetch staff info for email
+            $staff = $this->coreModel->getStaffInfo($staff_id);
+            if (!$staff || empty($staff['email'])) {
+                throw new Exception("Staff not found or has no email on file");
+            }
+
+            // Save file
+            $upload_dir = __DIR__ . '/../../public/uploads/agreements/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+
+            $filename = 'agreement_' . $staff_id . '_' . time() . '.pdf';
+            $dest     = $upload_dir . $filename;
+            if (!move_uploaded_file($file['tmp_name'], $dest)) {
+                throw new Exception("Failed to save uploaded file");
+            }
+
+            $relative_path = 'uploads/agreements/' . $filename;
+
+            // Create agreement record
+            $result = $this->coreModel->create_agreement($staff_id, $relative_path, $file['name']);
+            if (!$result['status']) throw new Exception($result['message'] ?? 'Failed to create agreement');
+
+            // Build signing URL
+            $protocol    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host        = $_SERVER['HTTP_HOST'];
+            $signing_url = $protocol . '://' . $host . '/sign_agreement?token=' . $result['token'];
+
+            // Queue email via existing mail_queue
+            $staffName = trim(($staff['firstname'] ?? '') . ' ' . ($staff['lastname'] ?? ''));
+            $body = $this->buildAgreementEmail($staffName, $signing_url);
+            $this->queueAgreementMail($staff['email'], $staffName, 'Agreement for Signature — TAMEC Care Staffing', $body);
+
+            $this->coreModel->logActivity(
+                'create',
+                'Agreement Sent',
+                'Sent agreement "' . $file['name'] . '" to staff ID: ' . $staff_id . ' for signature',
+                'staff'
+            );
+
+            echo json_encode([
+                'status' => true,
+                'message' => 'Agreement sent successfully',
+                'signing_url' => $signing_url
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function submit_signature()
+    {
+        header('Content-Type: application/json');
+        try {
+            $token          = $_POST['token'] ?? '';
+            $signer_name    = trim($_POST['signer_name'] ?? '');
+            $signature_data = $_POST['signature_data'] ?? '';
+
+            if (!$token) throw new Exception("Invalid signing link");
+            if (!$signer_name) throw new Exception("Please type your full name");
+            if (!$signature_data) throw new Exception("Please sign before submitting");
+
+            $agreement = $this->coreModel->get_agreement_by_token($token);
+            if (!$agreement) throw new Exception("Agreement not found or link expired");
+            if ($agreement['status'] === 'signed') throw new Exception("This agreement has already been signed");
+
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+            $result = $this->coreModel->save_signed_agreement(
+                (int)$agreement['agreement_id'], $signer_name, $signature_data, $ip, $ua
+            );
+            if (!$result['status']) throw new Exception($result['message'] ?? 'Failed to save signature');
+
+            // Notify admin (fetch admin emails and queue notification)
+            $this->notifyAdminAgreementSigned($agreement, $signer_name);
+
+            echo json_encode(['status' => true, 'message' => 'Agreement signed successfully']);
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function fetch_staff_agreements()
+    {
+        header('Content-Type: application/json');
+        try {
+            $staff_id = (int) ($_POST['staff_id'] ?? 0);
+            if (!$staff_id) throw new Exception("Staff ID is required");
+            echo json_encode($this->coreModel->get_agreements_for_staff($staff_id));
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function view_signed_agreement()
+    {
+        header('Content-Type: application/json');
+        try {
+            $agreement_id = (int) ($_POST['agreement_id'] ?? 0);
+            if (!$agreement_id) throw new Exception("Agreement ID is required");
+            $agreement = $this->coreModel->get_agreement_by_id($agreement_id);
+            if (!$agreement) throw new Exception("Agreement not found");
+            echo json_encode(['status' => true, 'agreement' => $agreement]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // ─── Agreement helpers ──
+    private function queueAgreementMail($email, $name, $subject, $body)
+    {
+        $stmt = $this->db->prepare(
+            "INSERT INTO mail_queue (to_email, to_name, subject, body, status, attempts, created_at)
+             VALUES (?, ?, ?, ?, 'pending', 0, NOW())"
+        );
+        $stmt->bind_param('ssss', $email, $name, $subject, $body);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    private function buildAgreementEmail($staffName, $signingUrl)
+    {
+        $safeName = htmlspecialchars($staffName);
+        $safeUrl  = htmlspecialchars($signingUrl);
+
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+<tr><td style="background:#003366;padding:28px 32px;">
+<p style="margin:0;font-size:20px;font-weight:700;color:#fff;">TAMEC Care Staffing Services</p>
+<p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">Agreement For Your Signature</p>
+</td></tr>
+<tr><td style="padding:32px;">
+<p style="margin:0 0 16px;font-size:15px;color:#111827;">Hi <strong>' . $safeName . '</strong>,</p>
+<p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6;">An agreement has been sent to you for review and signature. Please click the button below to view and sign the document online.</p>
+<p style="margin:24px 0;text-align:center;">
+<a href="' . $safeUrl . '" style="display:inline-block;background:#99CC33;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;">Review &amp; Sign Agreement</a>
+</p>
+<p style="margin:16px 0 0;font-size:12px;color:#6b7280;">Or copy this link into your browser:<br><span style="word-break:break-all;color:#003366;">' . $safeUrl . '</span></p>
+<p style="margin:24px 0 0;font-size:12px;color:#9ca3af;">If you have any questions, reply to this email or contact us at info@tameccarestaffing.com.</p>
+</td></tr>
+<tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+<p style="margin:0;font-size:12px;color:#9ca3af;">TAMEC Care Staffing Services Ltd &bull; 3100 Steeles Ave W, Suite 403, Concord, ON L4K 3R1</p>
+</td></tr></table>
+</td></tr></table></body></html>';
+    }
+
+    private function notifyAdminAgreementSigned($agreement, $signerName)
+    {
+        try {
+            $result = $this->db->query("SELECT email, firstname FROM staffs WHERE is_admin = 1 AND is_active = 1");
+            $safeStaff  = htmlspecialchars($agreement['staff_name'] ?? '—');
+            $safeSigner = htmlspecialchars($signerName);
+            $safeFile   = htmlspecialchars($agreement['original_filename'] ?? '—');
+
+            $body = '<p>Hi Admin,</p>'
+                  . '<p><strong>' . $safeSigner . '</strong> (' . $safeStaff . ') has signed the agreement <em>' . $safeFile . '</em>.</p>'
+                  . '<p>Sign in to the admin panel to view the signed document.</p>';
+
+            while ($row = $result->fetch_assoc()) {
+                if (!empty($row['email'])) {
+                    $this->queueAgreementMail($row['email'], $row['firstname'] ?: 'Admin', 'Agreement Signed — ' . $signerName, $body);
+                }
+            }
+        } catch (Exception $e) {
+            error_log("notifyAdminAgreementSigned error: " . $e->getMessage());
         }
     }
 }

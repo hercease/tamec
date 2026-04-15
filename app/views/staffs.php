@@ -289,7 +289,11 @@
         .action-btn.view:hover {
             color: #003366;
         }
-        
+
+        .action-btn.agreement:hover {
+            color: #7c3aed;
+        }
+
         /* Filter bar */
         .filter-bar {
             display: flex;
@@ -705,6 +709,74 @@
         </div>
     </div>
 
+    <!-- Agreement Management Modal -->
+    <div id="agreementModal" class="modal">
+        <div class="modal-content max-w-3xl">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-5">
+                    <div>
+                        <h3 class="text-xl font-bold text-black">Staff Agreements</h3>
+                        <p class="text-xs text-gray-500 mt-0.5" id="agreementStaffName">—</p>
+                    </div>
+                    <button onclick="closeAgreementModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Upload new agreement -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
+                    <p class="text-sm font-semibold text-[#003366] mb-3"><i class="fas fa-paper-plane mr-1.5"></i> Send New Agreement</p>
+                    <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                        <div class="flex-1 w-full">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">PDF File (max 10MB)</label>
+                            <input type="file" id="agreementFile" accept=".pdf" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                        </div>
+                        <button onclick="sendAgreement()" id="sendAgreementBtn"
+                                class="px-4 py-2 bg-[#99CC33] hover:bg-[#88bb22] text-white rounded-lg text-sm font-semibold disabled:opacity-50 transition flex items-center gap-2">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Agreement list -->
+                <p class="text-sm font-semibold text-[#003366] mb-3"><i class="fas fa-list mr-1.5"></i> Agreement History</p>
+                <div id="agreementList" class="space-y-2">
+                    <p class="text-center text-sm text-gray-400 py-6">Loading…</p>
+                </div>
+
+                <div class="flex justify-end mt-5 border-t pt-4">
+                    <button onclick="closeAgreementModal()" class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Signed Agreement Modal -->
+    <div id="signedAgreementModal" class="modal">
+        <div class="modal-content max-w-4xl">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-xl font-bold text-black">Signed Agreement</h3>
+                    <button onclick="closeSignedModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div id="signedAgreementBody">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="flex justify-end mt-5 border-t pt-4">
+                    <button onclick="closeSignedModal()" class="px-4 py-2 bg-[#003366] text-white rounded-lg text-sm hover:bg-[#002244] transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast">
         <div class="flex items-center">
@@ -811,6 +883,9 @@
                                 </button>
                                 <button onclick="editStaff(${s.id})" class="action-btn edit" title="Edit">
                                     <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="openAgreementModal(${s.id}, '${s.firstname} ${s.lastname}')" class="action-btn agreement" title="Agreements">
+                                    <i class="fas fa-file-signature"></i>
                                 </button>
                                 <button onclick="openDeleteModal(${s.id})" class="action-btn delete" title="Delete">
                                     <i class="fas fa-trash"></i>
@@ -1262,6 +1337,183 @@
         }
 
         // Toast notification
+        // ─── Staff Agreements ────────────────────────────────────────────────
+        let currentAgreementStaffId = null;
+
+        function openAgreementModal(staffId, staffName) {
+            currentAgreementStaffId = staffId;
+            document.getElementById('agreementStaffName').textContent = 'For: ' + staffName;
+            document.getElementById('agreementFile').value = '';
+            document.getElementById('agreementList').innerHTML = '<p class="text-center text-sm text-gray-400 py-6">Loading…</p>';
+            document.getElementById('agreementModal').classList.add('active');
+            loadAgreements();
+        }
+
+        function closeAgreementModal() {
+            document.getElementById('agreementModal').classList.remove('active');
+            currentAgreementStaffId = null;
+        }
+
+        function loadAgreements() {
+            $.ajax({
+                url: 'fetch_staff_agreements',
+                method: 'POST',
+                data: { staff_id: currentAgreementStaffId },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.status) renderAgreements(res.agreements || []);
+                    else document.getElementById('agreementList').innerHTML = '<p class="text-center text-sm text-red-500 py-6">' + (res.message || 'Failed to load') + '</p>';
+                },
+                error: function() {
+                    document.getElementById('agreementList').innerHTML = '<p class="text-center text-sm text-red-500 py-6">Connection error.</p>';
+                }
+            });
+        }
+
+        function renderAgreements(list) {
+            const wrap = document.getElementById('agreementList');
+            if (list.length === 0) {
+                wrap.innerHTML = '<p class="text-center text-sm text-gray-400 py-6"><i class="far fa-folder-open mr-1"></i> No agreements sent yet.</p>';
+                return;
+            }
+            const statusColors = {
+                pending:  { bg:'bg-gray-100', text:'text-gray-600', icon:'fa-clock' },
+                viewed:   { bg:'bg-blue-100', text:'text-blue-700', icon:'fa-eye' },
+                signed:   { bg:'bg-green-100', text:'text-green-700', icon:'fa-check-circle' },
+                expired:  { bg:'bg-red-100', text:'text-red-700', icon:'fa-times-circle' }
+            };
+            wrap.innerHTML = list.map(function(a) {
+                const sc = statusColors[a.status] || statusColors.pending;
+                const fmt = function(d) { return d ? new Date(d).toLocaleString('en-CA') : '—'; };
+                const viewBtn = a.status === 'signed'
+                    ? '<button onclick="viewSignedAgreement(' + a.agreement_id + ')" class="text-[#003366] hover:underline text-xs font-semibold ml-3"><i class="fas fa-eye mr-1"></i>View</button>'
+                    : '';
+                const copyBtn = a.status !== 'signed'
+                    ? '<button onclick="copySigningLink(\'' + a.token + '\')" class="text-[#003366] hover:underline text-xs font-semibold ml-3"><i class="fas fa-link mr-1"></i>Copy Link</button>'
+                    : '';
+                return '<div class="flex items-center justify-between border border-gray-200 rounded-lg p-3 bg-white">'
+                    + '<div class="flex-1 min-w-0">'
+                        + '<div class="flex items-center gap-2 mb-1">'
+                            + '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ' + sc.bg + ' ' + sc.text + '">'
+                                + '<i class="fas ' + sc.icon + ' mr-1"></i>' + (a.status.charAt(0).toUpperCase() + a.status.slice(1))
+                            + '</span>'
+                            + '<p class="text-sm font-semibold text-gray-800 truncate">' + escapeHtml(a.original_filename) + '</p>'
+                        + '</div>'
+                        + '<p class="text-xs text-gray-500">Sent: ' + fmt(a.sent_at) + (a.signed_at ? ' &bull; Signed: ' + fmt(a.signed_at) + ' by ' + escapeHtml(a.signer_name || '—') : '') + '</p>'
+                    + '</div>'
+                    + '<div class="flex items-center">' + viewBtn + copyBtn + '</div>'
+                + '</div>';
+            }).join('');
+        }
+
+        function copySigningLink(token) {
+            const url = window.location.origin + '/sign_agreement?token=' + token;
+            navigator.clipboard.writeText(url).then(function() {
+                showToast('Copied', 'Signing link copied to clipboard.', 'success');
+            }).catch(function() {
+                prompt('Copy this signing link:', url);
+            });
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+                return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+            });
+        }
+
+        function sendAgreement() {
+            const fileInput = document.getElementById('agreementFile');
+            if (!fileInput.files.length) {
+                return showToast('No File', 'Please choose a PDF file first.', 'error');
+            }
+            const file = fileInput.files[0];
+            if (file.type !== 'application/pdf') {
+                return showToast('Invalid Type', 'Only PDF files are allowed.', 'error');
+            }
+
+            const btn = document.getElementById('sendAgreementBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+
+            const fd = new FormData();
+            fd.append('staff_id', currentAgreementStaffId);
+            fd.append('agreement', file);
+
+            $.ajax({
+                url: 'send_agreement',
+                method: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(res) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+                    if (res.status) {
+                        showToast('Sent', 'Agreement sent for signature.', 'success');
+                        fileInput.value = '';
+                        loadAgreements();
+                    } else {
+                        showToast('Error', res.message || 'Failed to send agreement.', 'error');
+                    }
+                },
+                error: function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+                    showToast('Error', 'Connection error. Please try again.', 'error');
+                }
+            });
+        }
+
+        function viewSignedAgreement(agreementId) {
+            $.ajax({
+                url: 'view_signed_agreement',
+                method: 'POST',
+                data: { agreement_id: agreementId },
+                dataType: 'json',
+                success: function(res) {
+                    if (!res.status) return showToast('Error', res.message || 'Failed to load.', 'error');
+                    const a = res.agreement;
+                    const fmt = function(d) { return d ? new Date(d).toLocaleString('en-CA') : '—'; };
+                    document.getElementById('signedAgreementBody').innerHTML = `
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Signer</p>
+                                <p class="text-sm font-semibold text-gray-900 mt-1">${escapeHtml(a.signer_name || '—')}</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Signed At</p>
+                                <p class="text-sm font-semibold text-gray-900 mt-1">${fmt(a.signed_at)}</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">IP Address</p>
+                                <p class="text-sm font-semibold text-gray-900 mt-1">${escapeHtml(a.signer_ip || '—')}</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Document</p>
+                                <a href="public/${escapeHtml(a.template_file.replace(/^\//, ''))}" target="_blank" class="text-sm font-semibold text-[#003366] hover:underline mt-1 inline-block">
+                                    <i class="fas fa-file-pdf mr-1"></i> ${escapeHtml(a.original_filename)}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 bg-white">
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-2">Signature</p>
+                            <div class="border border-dashed border-gray-300 rounded p-3 bg-gray-50 text-center">
+                                <img src="${a.signature_data}" alt="Signature" style="max-height:120px;max-width:100%;display:inline-block;">
+                            </div>
+                        </div>
+                        ${a.signer_user_agent ? `<p class="text-xs text-gray-400 mt-3"><strong>Device:</strong> ${escapeHtml(a.signer_user_agent)}</p>` : ''}
+                    `;
+                    document.getElementById('signedAgreementModal').classList.add('active');
+                },
+                error: function() { showToast('Error', 'Failed to load agreement.', 'error'); }
+            });
+        }
+
+        function closeSignedModal() {
+            document.getElementById('signedAgreementModal').classList.remove('active');
+        }
+
         function showToast(title, message, type = 'success') {
             const toast = document.getElementById('toast');
             const icon = document.getElementById('toastIcon');
