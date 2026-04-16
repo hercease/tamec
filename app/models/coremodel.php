@@ -1899,20 +1899,23 @@ class CoreModel
         $scheduleData['clock_out'] = isset($scheduleData['clock_out']) ? $schedule_date . ' ' . $scheduleData['clock_out'] : null;
         try {
 
+            $payRate = isset($scheduleData['pay_per_hour']) ? (float) $scheduleData['pay_per_hour'] : 0;
+
             $query = "
-                UPDATE schedules 
-                SET start_time = ?, end_time = ?, clockin_time = ?, clockout_time = ?, status = ?
+                UPDATE schedules
+                SET start_time = ?, end_time = ?, clockin_time = ?, clockout_time = ?, status = ?, pay_per_hour = ?
                 WHERE schedule_id = ?
             ";
 
             $stmt = $this->db->prepare($query);
             $stmt->bind_param(
-                'sssssi',
+                'sssssdi',
                 $scheduleData['start_time'],
                 $scheduleData['end_time'],
                 $scheduleData['clock_in'],
                 $scheduleData['clock_out'],
                 $scheduleData['status'],
+                $payRate,
                 $scheduleData['id']
             );
 
