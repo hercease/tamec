@@ -2651,14 +2651,20 @@ class CoreModel
                 CONCAT(st.firstname, ' ', st.lastname) AS staff_name,
                 CONCAT(cl.firstname, ' ', cl.lastname) AS client_name,
                 CONCAT_WS(', ', cl.residential_city, cl.residential_province) AS client_location,
-                ROUND(GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2) AS hours_worked,
+                ROUND(
+                    (TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time)
+                     + CASE WHEN sc.end_time < sc.start_time THEN 1440 ELSE 0 END
+                    ) / 60, 2
+                ) AS hours_worked,
                 ROUND(
                     CASE WHEN sc.holiday_pay > 0
                         THEN (sc.pay_per_hour * sc.holiday_pay / 100)
                         ELSE sc.pay_per_hour
                     END
                     *
-                    GREATEST(TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time) / 60, 0), 2
+                    (TIMESTAMPDIFF(MINUTE, sc.start_time, sc.end_time)
+                     + CASE WHEN sc.end_time < sc.start_time THEN 1440 ELSE 0 END
+                    ) / 60, 2
                 ) AS amount
             FROM schedules sc
             JOIN staffs st ON sc.user_id = st.staff_id
